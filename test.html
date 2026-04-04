@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختبار الأسئلة التفاعلية</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div style="max-width: 1000px; margin: 0 auto; padding: 24px 16px;">
+    <div style="text-align: center; margin-bottom: 40px; padding: 24px; background: linear-gradient(135deg, #2196F3, #7C3AED); border-radius: 16px; color: white;">
+      <h1 style="font-size: 28px; margin-bottom: 8px;">🧪 اختبار الأسئلة التفاعلية</h1>
+      <p>اختبر جميع أنواع الأسئلة: اختر من متعدد، صح وخطأ، وصل</p>
+    </div>
+
+    <!-- ===== اختبار اختر من متعدد ===== -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid #2196F3; color: #1E293B;">🎯 اختبار: اختر من متعدد</h2>
+      <div id="mcq-test"></div>
+      <button style="margin-top: 20px; width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 12px; font-family: Cairo; font-size: 15px; font-weight: 700; cursor: pointer;" onclick="testMCQ()">✅ تحقق من الإجابات</button>
+      <div id="mcq-result" style="margin-top: 16px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; align-items: flex-start; gap: 10px; display: none;"></div>
+    </div>
+
+    <!-- ===== اختبار صح وخطأ ===== -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid #10B981; color: #1E293B;">✅ اختبار: صح أم خطأ</h2>
+      <div id="tf-test"></div>
+      <button style="margin-top: 20px; width: 100%; padding: 12px; background: #10B981; color: white; border: none; border-radius: 12px; font-family: Cairo; font-size: 15px; font-weight: 700; cursor: pointer;" onclick="testTF()">✅ تحقق من الإجابات</button>
+      <div id="tf-result" style="margin-top: 16px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; align-items: flex-start; gap: 10px; display: none;"></div>
+    </div>
+
+    <!-- ===== اختبار الوصل ===== -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid #F59E0B; color: #1E293B;">🔗 اختبار: وصّل (التوصيل)</h2>
+      <div id="match-test"></div>
+      <button style="margin-top: 20px; width: 100%; padding: 12px; background: #F59E0B; color: white; border: none; border-radius: 12px; font-family: Cairo; font-size: 15px; font-weight: 700; cursor: pointer;" onclick="testMatch()">✅ تحقق من الإجابات</button>
+      <div id="match-result" style="margin-top: 16px; padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; align-items: flex-start; gap: 10px; display: none;"></div>
+    </div>
+
+    <!-- ===== النتائج الإجمالية ===== -->
+    <div id="overall-result" style="background: white; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 20px; color: #1E293B;">📊 النتيجة الإجمالية</h2>
+      <p>أجب على جميع الأسئلة وانقر على الأزرار للتحقق</p>
+    </div>
+  </div>
+
+  <script src="js/questions.js"></script>
+  <script>
+    console.log('🧪 test.html script started');
+
+    // ===== بيانات الاختبار =====
+    const testQuestions = {
+      mcq: [
+        { question: 'ما هو الحاسب؟', options: ['جهاز إلكتروني يعالج المعلومات', 'جهاز للطبخ', 'أداة للرسم', 'جهاز للعب فقط'], answer: 0 },
+        { question: 'أي من التالي مثال على وحدة إدخال؟', options: ['الفأرة', 'الشاشة', 'الطابعة', 'السماعات'], answer: 0 }
+      ],
+      tf: [
+        { question: 'لوحة المفاتيح أداة إدخال في الحاسب', answer: true },
+        { question: 'الطابعة من وحدات الإدخال', answer: false }
+      ],
+      match: [
+        { question: 'صل كل جزء بوظيفته', pairs: [['CPU', 'معالج البيانات'], ['RAM', 'ذاكرة مؤقتة'], ['HDD', 'وحدة تخزين دائمة']] }
+      ]
+    };
+
+    // ===== متغيرات التوصيل =====
+    let matchConnections = {};
+    let selectedLeft = null;
+
+    function initTest() {
+      console.log('🧪 initTest() called - starting to render questions');
+      try {
+        // MCQ
+        const mcqHtml = testQuestions.mcq.map((q, idx) => `
+        <div class="question-card" id="mcq-${idx}" data-type="mcq" data-answer="${q.answer}">
+          <div class="q-header"><span class="q-num" style="background: #2196F3">${idx + 1}</span><span class="q-type-badge">🎯 اختر الإجابة الصحيحة</span></div>
+          <p class="q-text">${q.question}</p>
+          <div class="mcq-options">
+            ${q.options.map((opt, i) => `
+              <label class="mcq-option" data-index="${i}">
+                <input type="radio" name="mcq-${idx}" value="${i}" onchange="selectOption(this, 'mcq-${idx}')">
+                <span class="opt-letter">${['أ','ب','ج','د'][i]}</span>
+                <span class="opt-text">${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div class="q-feedback hidden"></div>
+        </div>
+      `).join('');
+        document.getElementById('mcq-test').innerHTML = mcqHtml;
+        console.log('✅ MCQ rendered successfully');
+
+        // TF
+        const tfHtml = testQuestions.tf.map((q, idx) => `
+        <div class="question-card" id="tf-${idx}" data-type="tf" data-answer="${q.answer}">
+          <div class="q-header"><span class="q-num" style="background: #10B981">${idx + 1}</span><span class="q-type-badge">✅ هل هذه العبارة صحيحة أم خاطئة؟</span></div>
+          <p class="q-text tf-statement">❓ ${q.question}</p>
+          <div class="tf-buttons">
+            <button class="tf-btn tf-true" onclick="selectTF(this, 'tf-${idx}', true)">
+              <span class="tf-icon">✅</span>
+              <span>صح</span>
+            </button>
+            <button class="tf-btn tf-false" onclick="selectTF(this, 'tf-${idx}', false)">
+              <span class="tf-icon">❌</span>
+              <span>خطأ</span>
+            </button>
+          </div>
+          <div class="q-feedback hidden"></div>
+        </div>
+      `).join('');
+        document.getElementById('tf-test').innerHTML = tfHtml;
+        console.log('✅ TF rendered successfully');
+
+        // Match
+        const matchQ = testQuestions.match[0];
+        const rights = [...matchQ.pairs.map(p => p[1])].sort(() => Math.random() - 0.5);
+
+        const leftItems = matchQ.pairs.map((p, i) => `
+        <div class="match-left-item" data-idx="${i}" onclick="selectMatchItem(this, 'left', 0)">
+          <span class="match-item-text">${p[0]}</span>
+        </div>
+      `).join('');
+
+        const rightItems = rights.map((r, i) => `
+        <div class="match-right-item" data-val="${r}" data-idx="${i}"
+             draggable="true" ondragstart="dragStartMatch(event, 0)">
+          <span class="match-item-text">${r}</span>
+        </div>
+      `).join('');
+
+        const correctMap = JSON.stringify(matchQ.pairs.map(p => p[1])).replace(/"/g, '&quot;');
+
+        const matchHtml = `
+        <div class="question-card" id="qcard-0" data-type="match" data-correct="${correctMap}">
+          <div class="q-header"><span class="q-num" style="background: #F59E0B">1</span><span class="q-type-badge">🔗 اسحب وأفلت للتوصيل</span></div>
+          <p class="q-text">${matchQ.question}</p>
+          <div class="match-wrapper">
+            <div class="match-column match-left-col">
+              <div class="match-col-title">العمود الأول</div>
+              <div class="match-items-left">${leftItems}</div>
+            </div>
+            <div class="match-connections">
+              <svg id="svg-0" class="match-svg" style="width:100%; height:100%; position:absolute; top:0; left:0;"></svg>
+            </div>
+            <div class="match-column match-right-col">
+              <div class="match-col-title">العمود الثاني</div>
+              <div class="match-items-right" ondrop="dropMatch(event, 0)" ondragover="allowDrop(event)">
+                ${rightItems}
+              </div>
+            </div>
+          </div>
+          <div class="q-feedback hidden"></div>
+        </div>
+      `;
+        document.getElementById('match-test').innerHTML = matchHtml;
+        console.log('✅ Match rendered successfully');
+
+        setTimeout(() => {
+          initDragDrop();
+          console.log('✅ initDragDrop completed');
+        }, 100);
+
+        console.log('✅ initTest() completed successfully - all questions rendered!');
+      } catch (error) {
+        console.error('❌ Error in initTest():', error);
+        console.error('  Stack:', error.stack);
+        document.getElementById('mcq-test').innerHTML = `<div style="color: red; padding: 15px; background: #ffe0e0; border-radius: 8px;"><strong>❌ خطأ:</strong> ${error.message}</div>`;
+      }
+    }
+
+    function testMCQ() {
+      let correct = 0;
+      const total = testQuestions.mcq.length;
+      testQuestions.mcq.forEach((q, idx) => {
+        const card = document.getElementById(`mcq-${idx}`);
+        const feedback = card.querySelector('.q-feedback');
+        const selected = card.querySelector('input[type="radio"]:checked');
+        feedback.classList.remove('hidden', 'correct', 'wrong');
+        card.classList.remove('card-correct', 'card-wrong');
+        card.querySelectorAll('.mcq-option').forEach(opt => opt.classList.remove('correct', 'wrong'));
+        if (selected) {
+          const userAns = parseInt(selected.value);
+          const isCorrect = userAns === q.answer;
+          card.querySelectorAll('.mcq-option').forEach((opt, i) => {
+            if (i === q.answer) opt.classList.add('correct');
+            else if (i === userAns && !isCorrect) opt.classList.add('wrong');
+          });
+          feedback.textContent = isCorrect ? '✅ صحيح!' : `❌ الإجابة الصحيحة: ${q.options[q.answer]}`;
+          feedback.classList.add(isCorrect ? 'correct' : 'wrong');
+          card.classList.add(isCorrect ? 'card-correct' : 'card-wrong');
+          if (isCorrect) correct++;
+        } else {
+          feedback.textContent = '⚠️ لم تختر إجابة';
+          feedback.classList.add('wrong');
+          card.classList.add('card-wrong');
+        }
+      });
+      const pct = Math.round((correct / total) * 100);
+      document.getElementById('mcq-result').innerHTML = `<span>${pct === 100 ? '🏆' : pct >= 60 ? '👍' : '💪'}</span><span><strong>النتيجة:</strong> ${correct}/${total} (${pct}%)</span>`;
+      document.getElementById('mcq-result').style.display = 'flex';
+      document.getElementById('mcq-result').className = pct === 100 ? 'feedback-box correct' : pct >= 60 ? 'feedback-box' : 'feedback-box wrong';
+    }
+
+    function testTF() {
+      let correct = 0;
+      const total = testQuestions.tf.length;
+      testQuestions.tf.forEach((q, idx) => {
+        const card = document.getElementById(`tf-${idx}`);
+        const feedback = card.querySelector('.q-feedback');
+        const userAns = card.dataset.userAnswer;
+        feedback.classList.remove('hidden', 'correct', 'wrong');
+        card.classList.remove('card-correct', 'card-wrong');
+        card.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('correct', 'wrong', 'selected'));
+        if (userAns !== undefined) {
+          const userBool = userAns === 'true';
+          const isCorrect = userBool === q.answer;
+          card.querySelectorAll('.tf-btn').forEach(btn => {
+            const btnVal = btn.classList.contains('tf-true');
+            if (btnVal === q.answer) btn.classList.add('correct');
+            else if (btnVal === userBool && !isCorrect) btn.classList.add('wrong');
+          });
+          feedback.textContent = isCorrect ? '✅ صحيح!' : `❌ الإجابة: ${q.answer ? 'صح ✅' : 'خطأ ❌'}`;
+          feedback.classList.add(isCorrect ? 'correct' : 'wrong');
+          card.classList.add(isCorrect ? 'card-correct' : 'card-wrong');
+          if (isCorrect) correct++;
+        } else {
+          feedback.textContent = '⚠️ لم تختر إجابة';
+          feedback.classList.add('wrong');
+          card.classList.add('card-wrong');
+        }
+      });
+      const pct = Math.round((correct / total) * 100);
+      document.getElementById('tf-result').innerHTML = `<span>${pct === 100 ? '🏆' : pct >= 60 ? '👍' : '💪'}</span><span><strong>النتيجة:</strong> ${correct}/${total} (${pct}%)</span>`;
+      document.getElementById('tf-result').style.display = 'flex';
+      document.getElementById('tf-result').className = pct === 100 ? 'feedback-box correct' : pct >= 60 ? 'feedback-box' : 'feedback-box wrong';
+    }
+
+    function testMatch() {
+      const card = document.getElementById('qcard-0');
+      const correct_arr = JSON.parse(card.dataset.correct);
+      const leftItems = card.querySelectorAll('.match-left-item');
+      const feedback = card.querySelector('.q-feedback');
+      let allRight = true;
+      leftItems.forEach((leftItem, i) => {
+        const userVal = matchConnections[i];
+        const isItemCorrect = userVal === correct_arr[i];
+        if (!isItemCorrect) allRight = false;
+        leftItem.classList.remove('correct', 'wrong');
+        leftItem.classList.add(isItemCorrect ? 'correct' : 'wrong');
+        const rightItems = card.querySelectorAll('.match-right-item');
+        rightItems.forEach(rightItem => {
+          if (rightItem.dataset.val === userVal) {
+            rightItem.classList.remove('correct', 'wrong');
+            rightItem.classList.add(isItemCorrect ? 'correct' : 'wrong');
+          }
+        });
+      });
+      feedback.classList.remove('hidden', 'correct', 'wrong');
+      feedback.textContent = allRight ? '✅ ممتاز!' : '❌ بعض التوصيلات خاطئة';
+      feedback.classList.add(allRight ? 'correct' : 'wrong');
+      card.classList.add(allRight ? 'card-correct' : 'card-wrong');
+      document.getElementById('match-result').innerHTML = `<span>${allRight ? '🏆' : '💪'}</span><span><strong>النتيجة:</strong> ${allRight ? 'ممتاز!' : 'حاول مجدداً'}</span>`;
+      document.getElementById('match-result').style.display = 'flex';
+      document.getElementById('match-result').className = allRight ? 'feedback-box correct' : 'feedback-box wrong';
+    }
+
+    function selectOption(input, id) {
+      const card = document.getElementById(id);
+      card.querySelectorAll('.mcq-option').forEach(opt => opt.classList.remove('selected'));
+      input.closest('.mcq-option').classList.add('selected');
+    }
+
+    function selectTF(btn, id, val) {
+      const card = document.getElementById(id);
+      card.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      card.dataset.userAnswer = val;
+    }
+
+    // ===== دوال التوصيل (موجودة في questions.js) =====
+    // يتم استدعاء الدوال التالية من questions.js:
+    // - dragStartMatch(event, questionNum)
+    // - allowDrop(event)
+    // - dropMatch(event, questionNum)
+    // - selectMatchItem(element, side, questionNum)
+    // - initDragDrop()
+
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🧪 [0] DOMContentLoaded event fired');
+      initTest();
+    });
+
+    console.log('✅ Script execution completed, waiting for DOM to load...');
+  </script>
+</body>
+</html>
