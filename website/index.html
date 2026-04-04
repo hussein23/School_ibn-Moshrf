@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المهارات الرقمية - موقع تعليمي تفاعلي</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== الهيدر ===== -->
+  <header>
+    <div class="header-inner">
+      <div class="logo" onclick="showHome()">
+        <div class="logo-icon">💻</div>
+        <div class="logo-text">
+          المهارات الرقمية
+          <span>موقع تعليمي تفاعلي</span>
+        </div>
+      </div>
+      <nav id="breadcrumb" style="flex: 1;"></nav>
+      <button class="theme-toggle" onclick="toggleDarkMode()" title="تبديل المظهر الليلي">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== المحتوى الرئيسي ===== -->
+  <main id="main-content">
+    <!-- يتم حقن المحتوى هنا بواسطة JavaScript -->
+  </main>
+
+  <!-- ===== نافذة الدرس والأسئلة ===== -->
+  <div id="lesson-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeLesson()"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeLesson()">✕</button>
+      <div id="lesson-content"></div>
+    </div>
+  </div>
+
+  <!-- ===== نافذة النتيجة ===== -->
+  <div id="result-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-box result-box">
+      <div id="result-content"></div>
+    </div>
+  </div>
+
+  <!-- ===== تأثيرات الاحتفالات ===== -->
+  <div id="celebration" class="celebration hidden"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/animations.js"></script>
+</body>
+</html>
