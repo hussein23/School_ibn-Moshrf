@@ -177,6 +177,91 @@ main {
 }
 
 /* ===================================================
+   بطاقة المدرسة والمعلم
+   =================================================== */
+.school-banner {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e40af 0%, #4f46e5 50%, #7c3aed 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 32px rgba(79,70,229,0.3);
+}
+
+.school-banner-bg {
+  position: absolute;
+  left: -10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 140px;
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+.school-banner-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.school-info-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 32px;
+  flex: 1;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.school-info-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+
+.school-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.school-info-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.school-info-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.school-banner-divider {
+  width: 1px;
+  height: 50px;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .school-banner { padding: 20px 16px; }
+  .school-banner-inner { gap: 16px; }
+  .school-info-block { padding: 0 12px; min-width: 130px; }
+  .school-info-value { font-size: 16px; }
+  .school-banner-divider { display: none; }
+}
+
+/* ===================================================
    الصفحة الرئيسية - اختيار الصف
    =================================================== */
 .home-hero {
@@ -1513,6 +1598,99 @@ body.dark-mode .modal-overlay {
 body.dark-mode .section-title .title-icon {
   background: var(--border);
 }
+
+/* ===== إصلاح شامل لألوان Hover في الوضع الليلي ===== */
+
+/* أزرار MCQ القديمة */
+body.dark-mode .mc-option {
+  background: var(--white);
+  color: var(--text-dark);
+}
+body.dark-mode .mc-option:hover:not(:disabled) {
+  background: #1E3A5F;
+  color: var(--text-dark);
+  border-color: var(--grade5-color);
+}
+body.dark-mode .mc-option.selected-correct {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+body.dark-mode .mc-option.selected-wrong {
+  background: #7F1D1D;
+  color: #FCA5A5;
+}
+body.dark-mode .mc-option.show-correct {
+  background: #064E3B;
+  color: #6EE7B7;
+}
+
+/* أزرار T/F القديمة */
+body.dark-mode .tf-btn {
+  background: var(--white);
+  color: var(--text-dark);
+}
+body.dark-mode .tf-btn.true-btn:hover:not(:disabled) {
+  background: #064E3B;
+  color: #6EE7B7;
+  border-color: #6EE7B7;
+}
+body.dark-mode .tf-btn.false-btn:hover:not(:disabled) {
+  background: #7F1D1D;
+  color: #FCA5A5;
+  border-color: #FCA5A5;
+}
+body.dark-mode .tf-btn.correct { background: #064E3B; color: #6EE7B7; border-color: #6EE7B7; }
+body.dark-mode .tf-btn.wrong   { background: #7F1D1D; color: #FCA5A5; border-color: #FCA5A5; }
+
+/* عناصر Drag & Drop */
+body.dark-mode .drag-item {
+  background: var(--white);
+  color: var(--text-dark);
+}
+body.dark-mode .drop-zone {
+  background: var(--white);
+  color: var(--text-mid);
+}
+body.dark-mode .drop-zone.drag-over,
+body.dark-mode .drop-zone.filled {
+  background: #1E3A5F;
+  color: var(--text-dark);
+  border-color: var(--grade5-color);
+}
+body.dark-mode .drop-zone.correct { background: #064E3B; color: #6EE7B7; border-color: #6EE7B7; }
+body.dark-mode .drop-zone.wrong   { background: #7F1D1D; color: #FCA5A5; border-color: #FCA5A5; }
+
+/* بطاقات التوصيل القديمة */
+body.dark-mode .match-left-col,
+body.dark-mode .match-right-col {
+  background: var(--white);
+  color: var(--text-dark);
+}
+body.dark-mode .match-left-item:hover,
+body.dark-mode .match-right-item:hover {
+  background: #1E3A5F !important;
+  color: var(--text-dark) !important;
+}
+body.dark-mode .match-left-item.selected {
+  background: var(--grade5-color) !important;
+  color: white !important;
+}
+body.dark-mode .match-right-item.matched {
+  background: #064E3B !important;
+  color: #6EE7B7 !important;
+  border-color: #6EE7B7 !important;
+}
+body.dark-mode .match-right-item.wrong-match {
+  background: #7F1D1D !important;
+  color: #FCA5A5 !important;
+}
+
+/* بطاقات الأسئلة */
+body.dark-mode .question-card { background: var(--white); }
+
+/* زر الرجوع */
+body.dark-mode .back-btn { background: var(--white); color: var(--text-dark); }
+body.dark-mode .back-btn:hover { background: var(--border); }
 
 /* تأثيرات الانتقال السلس */
 * {

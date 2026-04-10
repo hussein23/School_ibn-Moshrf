@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - المهارات الرقمية</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- ===== الشريط العلوي ===== -->
+  <header class="dash-header">
+    <div class="dash-header-right">
+      <div class="dash-logo">
+        <span>⚙️</span>
+        <div>
+          <strong>لوحة التحكم</strong>
+          <small>المهارات الرقمية</small>
+        </div>
+      </div>
+    </div>
+    <div class="dash-header-center">
+      <div class="save-status" id="save-status">✅ محفوظ</div>
+    </div>
+    <div class="dash-header-left">
+      <button class="hbtn hbtn-ghost" onclick="resetToDefault()" title="استعادة البيانات الأصلية">↺ استعادة</button>
+      <button class="hbtn hbtn-secondary" onclick="importJSON()">📥 استيراد</button>
+      <button class="hbtn hbtn-primary" onclick="exportJSON()">📤 تصدير JSON</button>
+      <a class="hbtn hbtn-view" href="index.html" target="_blank">👁 عرض الموقع</a>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
+    </div>
+  </header>
+
+  <div class="dash-layout">
+
+    <!-- ===== الشريط الجانبي ===== -->
+    <aside class="dash-sidebar">
+      <div class="sidebar-search">
+        <input type="text" id="search-input" placeholder="🔍 ابحث عن درس..." oninput="filterSidebar(this.value)">
+      </div>
+      <div class="sidebar-tree" id="sidebar-tree"></div>
+      <div class="sidebar-footer">
+        <button class="add-grade-btn" onclick="openAddLesson()">+ إضافة درس جديد</button>
+      </div>
+    </aside>
+
+    <!-- ===== المنطقة الرئيسية ===== -->
+    <main class="dash-main" id="dash-main">
+      <!-- الصفحة الرئيسية للوحة -->
+      <div class="dash-overview" id="overview-panel">
+        <h1 class="overview-title">مرحباً بك في لوحة التحكم 👋</h1>
+        <p class="overview-sub">اختر درساً من القائمة الجانبية للتعديل، أو ابدأ بالإحصائيات أدناه</p>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="overview-actions">
+          <button class="action-card" onclick="exportJSON()">
+            <span class="ac-icon">📤</span>
+            <strong>تصدير البيانات</strong>
+            <small>تنزيل data.js المعدّل</small>
+          </button>
+          <button class="action-card" onclick="importJSON()">
+            <span class="ac-icon">📥</span>
+            <strong>استيراد بيانات</strong>
+            <small>تحميل ملف JSON</small>
+          </button>
+          <button class="action-card" onclick="resetToDefault()">
+            <span class="ac-icon">↺</span>
+            <strong>استعادة الأصلي</strong>
+            <small>محو التعديلات المحلية</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- محرر الدرس (يظهر عند اختيار درس) -->
+      <div class="lesson-editor hidden" id="lesson-editor"></div>
+    </main>
+  </div>
+
+  <!-- ===== نافذة منشئ الأسئلة ===== -->
+  <div class="modal-overlay hidden" id="qb-overlay" onclick="closeQuestionBuilder()"></div>
+  <div class="question-builder hidden" id="question-builder">
+    <div class="qb-header">
+      <h2 id="qb-title">➕ إضافة سؤال</h2>
+      <button class="qb-close" onclick="closeQuestionBuilder()">✕</button>
+    </div>
+
+    <!-- اختيار نوع السؤال -->
+    <div class="qb-type-select" id="qb-type-select">
+      <p>اختر نوع السؤال:</p>
+      <div class="type-cards">
+        <button class="type-card" onclick="selectQuestionType('mcq')">
+          <span>🔘</span>
+          <strong>اختر من متعدد</strong>
+          <small>سؤال مع 4 خيارات</small>
+        </button>
+        <button class="type-card" onclick="selectQuestionType('tf')">
+          <span>✅</span>
+          <strong>صح أو خطأ</strong>
+          <small>جملة صحيحة أو خاطئة</small>
+        </button>
+        <button class="type-card" onclick="selectQuestionType('match')">
+          <span>🔗</span>
+          <strong>وصل</strong>
+          <small>ربط العمودين ببعض</small>
+        </button>
+        <button class="type-card" onclick="selectQuestionType('fill')">
+          <span>✏️</span>
+          <strong>أملأ الفراغ</strong>
+          <small>جمل بفراغات من بنك كلمات</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- نموذج السؤال -->
+    <div class="qb-form hidden" id="qb-form">
+      <button class="back-to-types" onclick="backToTypes()">← تغيير النوع</button>
+      <div id="qb-form-content"></div>
+      <div class="qb-preview" id="qb-preview"></div>
+      <div class="qb-actions">
+        <button class="qb-cancel" onclick="closeQuestionBuilder()">إلغاء</button>
+        <button class="qb-save" onclick="saveQuestion()">💾 حفظ السؤال</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== نافذة تأكيد الحذف ===== -->
+  <div class="confirm-overlay hidden" id="confirm-overlay">
+    <div class="confirm-box">
+      <p id="confirm-msg">هل أنت متأكد؟</p>
+      <div class="confirm-actions">
+        <button class="cbtn-cancel" onclick="closeConfirm()">إلغاء</button>
+        <button class="cbtn-delete" id="confirm-ok">حذف</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

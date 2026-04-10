@@ -37,6 +37,38 @@ function _renderHome() {
   pageTransition();
   const main = document.getElementById('main-content');
   main.innerHTML = `
+
+    <!-- ===== بطاقة المدرسة والمعلم ===== -->
+    <div class="school-banner">
+      <div class="school-banner-bg">🏫</div>
+      <div class="school-banner-inner">
+        <div class="school-info-block">
+          <div class="school-info-icon">🏫</div>
+          <div class="school-info-text">
+            <span class="school-info-label">المدرسة</span>
+            <span class="school-info-value">ابن المشرف</span>
+          </div>
+        </div>
+        <div class="school-banner-divider"></div>
+        <div class="school-info-block">
+          <div class="school-info-icon">👨‍🏫</div>
+          <div class="school-info-text">
+            <span class="school-info-label">معلم المادة</span>
+            <span class="school-info-value">حسين اللغبي</span>
+          </div>
+        </div>
+        <div class="school-banner-divider"></div>
+        <div class="school-info-block">
+          <div class="school-info-icon">💻</div>
+          <div class="school-info-text">
+            <span class="school-info-label">المادة</span>
+            <span class="school-info-value">المهارات الرقمية</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Hero ===== -->
     <div class="home-hero">
       <div class="hero-stars">⭐ ⭐ ⭐</div>
       <h1 class="hero-title">مرحباً بك في رحلة التعلم!</h1>

@@ -1,5 +1,5 @@
 // ===================================================
-//  صفحة الدرس - يقرأ معاملات URL ويعرض محتوى الدرس
+//  صفحة الدرس - تصميم جديد محفّز
 // ===================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const unitId   = p.get('u');
   const lessonId = p.get('l');
 
+  const saved = localStorage.getItem('ibn_moshrf_curriculum');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      Object.keys(parsed).forEach(k => CURRICULUM[k] = parsed[k]);
+    } catch(e) {}
+  }
+
   const grade  = CURRICULUM[gradeId];
   const sem    = grade.semesters.find(s => s.id === semId);
   const unit   = sem.units.find(u => u.id === unitId);
@@ -17,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.title = `${lesson.name} - المهارات الرقمية`;
 
   // شريط التنقل
-  const unitUrl = `unit.html?g=${gradeId}&s=${semId}&u=${unitId}`;
   document.getElementById('breadcrumb').innerHTML = `
     <span class="bc-item" onclick="history.go(-2)" style="cursor:pointer">${sem.name}</span>
     <span class="bc-sep">›</span>
@@ -26,66 +33,155 @@ document.addEventListener('DOMContentLoaded', () => {
     <span class="bc-item bc-current">${lesson.name}</span>
   `;
 
-  // محتوى الدرس
+  const qJSON = JSON.stringify(lesson.questions).replace(/"/g, '&quot;');
+
   document.getElementById('main-content').innerHTML = `
-    <div class="page-header" style="--hdr-color:${unit.color}">
-      <button class="back-btn" onclick="history.back()">← رجوع</button>
-      <div>
-        <p style="font-size:13px; color:var(--text-mid); margin-bottom:4px">${unit.icon} ${unit.name}</p>
-        <h1 style="font-size:20px; font-weight:900">${lesson.name}</h1>
+
+    <!-- زر رجوع -->
+    <button class="back-btn" onclick="history.back()" style="margin-bottom:20px">← رجوع</button>
+
+    <!-- ===== Hero ===== -->
+    <div class="lp-hero" style="background: linear-gradient(135deg, ${unit.color}dd 0%, ${unit.color} 100%)">
+      <div class="lp-hero-bg">${unit.icon}</div>
+      <div class="lp-hero-content">
+        <div class="lp-hero-meta">
+          <span class="lp-meta-chip">${grade.icon} ${grade.name}</span>
+          <span class="lp-meta-chip">${sem.name}</span>
+          <span class="lp-meta-chip">${unit.icon} ${unit.name}</span>
+        </div>
+        <h1 class="lp-hero-title">${lesson.name}</h1>
+        <div class="lp-hero-stats">
+          <div class="lp-stat">
+            <span class="lp-stat-icon">🎯</span>
+            <span>${lesson.objectives.length} أهداف</span>
+          </div>
+          <div class="lp-stat">
+            <span class="lp-stat-icon">⚡</span>
+            <span>${lesson.keyPoints.length} نقطة</span>
+          </div>
+          <div class="lp-stat">
+            <span class="lp-stat-icon">🎮</span>
+            <span>${lesson.questions.length} سؤال</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- بطاقة عنوان الدرس -->
-    <div class="lesson-hero" style="background:${unit.color}" data-icon="${unit.icon}">
-      <h1>${lesson.name}</h1>
-      <p>${unit.name} · ${sem.name} · ${grade.name}</p>
-      <div class="lesson-meta">
-        <span class="badge">🎯 ${lesson.objectives.length} أهداف</span>
-        <span class="badge">❓ ${lesson.questions.length} أسئلة</span>
+    <!-- ===== أهداف الدرس ===== -->
+    <div class="lp-section">
+      <div class="lp-section-header" style="--sec-color:${unit.color}">
+        <div class="lp-section-icon">🎯</div>
+        <h2>أهداف الدرس</h2>
       </div>
-    </div>
-
-    <!-- أهداف الدرس -->
-    <div class="lesson-section">
-      <h2 class="section-title">🎯 أهداف الدرس</h2>
-      <ul class="objectives-list">
-        ${lesson.objectives.map(obj => `<li>${obj}</li>`).join('')}
-      </ul>
-    </div>
-
-    <!-- ملخص الدرس -->
-    <div class="lesson-section">
-      <h2 class="section-title">📋 ملخص الدرس</h2>
-      <div class="summary-box">${lesson.summary}</div>
-    </div>
-
-    <!-- النقاط الرئيسية -->
-    <div class="lesson-section">
-      <h2 class="section-title">⚡ النقاط الرئيسية</h2>
-      <div class="key-points">
-        ${lesson.keyPoints.map(kp => `
-          <div class="key-point">
-            <span class="kp-dot" style="color:${unit.color}">●</span>
-            ${kp}
+      <div class="lp-objectives">
+        ${lesson.objectives.map((obj, i) => `
+          <div class="lp-obj-item" style="animation-delay:${i * 0.08}s">
+            <div class="lp-obj-num" style="background:${unit.color}20; color:${unit.color}">${i + 1}</div>
+            <span>${obj}</span>
           </div>
         `).join('')}
       </div>
     </div>
 
-    <!-- الأسئلة التفاعلية -->
-    <div class="lesson-section">
-      <h2 class="section-title">🎮 أسئلة تفاعلية</h2>
-      <p class="q-intro">أجب على الأسئلة التالية لاختبار فهمك للدرس</p>
-      <div id="questions-container">
+    <!-- ===== ملخص الدرس ===== -->
+    <div class="lp-section">
+      <div class="lp-section-header" style="--sec-color:${unit.color}">
+        <div class="lp-section-icon">📋</div>
+        <h2>ملخص الدرس</h2>
+      </div>
+      <div class="lp-summary" style="border-right-color:${unit.color}">
+        ${lesson.summary}
+      </div>
+    </div>
+
+    <!-- ===== النقاط الرئيسية ===== -->
+    <div class="lp-section">
+      <div class="lp-section-header" style="--sec-color:${unit.color}">
+        <div class="lp-section-icon">⚡</div>
+        <h2>النقاط الرئيسية</h2>
+      </div>
+      ${renderKeyPoints(lesson, unit.color)}
+    </div>
+
+    <!-- ===== الأسئلة التفاعلية ===== -->
+    <div class="lp-section lp-quiz-section">
+      <div class="lp-section-header" style="--sec-color:${unit.color}">
+        <div class="lp-section-icon">🎮</div>
+        <h2>اختبر نفسك</h2>
+        <span class="lp-quiz-count">${lesson.questions.length} أسئلة</span>
+      </div>
+      <p class="lp-quiz-intro">أجب على جميع الأسئلة ثم اضغط "تحقق من إجاباتي"</p>
+      <div id="questions-container" class="questions-container">
         ${renderAllQuestions(lesson.questions, unit.color)}
       </div>
-      <button class="check-btn" style="background:${unit.color}"
-              onclick="checkAllAnswers(${JSON.stringify(lesson.questions).replace(/"/g, '&quot;')})">
+      <button class="lp-check-btn" style="background:${unit.color}"
+              onclick="checkAllAnswers(${qJSON})">
         ✅ تحقق من إجاباتي
       </button>
     </div>
+
   `;
 
   setTimeout(() => initDragDrop(), 100);
 });
+
+// ===================================================
+//  عرض النقاط الرئيسية - متعدد الأوضاع
+// ===================================================
+function renderKeyPoints(lesson, color) {
+  const layout  = lesson.kpLayout || 'list';
+  const kps     = lesson.keyPoints || [];
+
+  if (!kps.length) return '<p style="color:var(--text-light);text-align:center;padding:20px">لا توجد نقاط رئيسية</p>';
+
+  // حساب طول النص بدون HTML لتحديد العرض في وضع الشبكة
+  function textLen(html) {
+    return html.replace(/<[^>]*>/g, '').trim().length;
+  }
+
+  if (layout === 'list') {
+    // ===== وضع القائمة: عمودي كامل العرض =====
+    return `
+      <div class="lp-keypoints lp-kp-list">
+        ${kps.map((kp, i) => `
+          <div class="lp-kp-card" style="animation-delay:${i*0.06}s; --kp-color:${color}">
+            <div class="lp-kp-dot" style="background:${color}"></div>
+            <span>${kp}</span>
+          </div>
+        `).join('')}
+      </div>`;
+
+  } else if (layout === 'grid') {
+    // ===== وضع الشبكة التلقائية: قصير = جنباً، طويل = عرض كامل =====
+    return `
+      <div class="lp-keypoints lp-kp-grid">
+        ${kps.map((kp, i) => {
+          const len  = textLen(kp);
+          const wide = len > 90;   // نص طويل ← عرض كامل
+          return `
+            <div class="lp-kp-card ${wide ? 'kp-full' : ''}"
+                 style="animation-delay:${i*0.06}s; --kp-color:${color}">
+              <div class="lp-kp-num" style="background:${color};color:#fff">${i+1}</div>
+              <span>${kp}</span>
+            </div>`;
+        }).join('')}
+      </div>`;
+
+  } else if (layout === 'cards') {
+    // ===== وضع البطاقات الملونة: شبكة ثابتة بألوان =====
+    const cardColors = [color, '#2196F3', '#10B981', '#F59E0B', '#EC4899', '#7C3AED'];
+    return `
+      <div class="lp-keypoints lp-kp-cards">
+        ${kps.map((kp, i) => {
+          const c = cardColors[i % cardColors.length];
+          return `
+            <div class="lp-kp-ccard" style="--card-color:${c}; animation-delay:${i*0.07}s">
+              <div class="lp-kp-ccard-num">${i+1}</div>
+              <div class="lp-kp-ccard-body">${kp}</div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  return '';
+}
