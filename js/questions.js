@@ -32,11 +32,11 @@ function renderMCQ(q, num, color) {
 
   const opts = q.options.map((opt, i) => `
     <button class="mcq-card" id="mcq-${num}-${i}"
-            onclick="selectMCQ(${num}, ${i}, ${q.answer})"
+            onclick="selectMCQ(${num}, ${i})"
             style="--opt-color:${letterColors[i % 4]}">
       <span class="mcq-letter">${letters[i]}</span>
       <span class="mcq-card-text">${opt}</span>
-      <span class="mcq-check hidden">✓</span>
+      <span class="mcq-check" style="display:none">✓</span>
     </button>
   `).join('');
 
@@ -56,20 +56,20 @@ function renderMCQ(q, num, color) {
   `;
 }
 
-function selectMCQ(num, idx, correct) {
+function selectMCQ(num, idx) {
   const card = document.getElementById(`qcard-${num}`);
   if (card.classList.contains('answered')) return;
 
-  // إزالة التحديد السابق
+  // إزالة التحديد السابق من جميع الخيارات
   card.querySelectorAll('.mcq-card').forEach(c => {
     c.classList.remove('mcq-selected');
-    c.querySelector('.mcq-check').classList.add('hidden');
+    c.querySelector('.mcq-check').style.display = 'none';
   });
 
-  // تحديد الجديد
+  // تحديد الخيار الجديد وإظهار علامة الاختيار عليه فقط
   const selected = document.getElementById(`mcq-${num}-${idx}`);
   selected.classList.add('mcq-selected');
-  selected.querySelector('.mcq-check').classList.remove('hidden');
+  selected.querySelector('.mcq-check').style.display = 'flex';
   card.dataset.userAnswer = idx;
 }
 
@@ -433,8 +433,28 @@ function checkAllAnswers(questions) {
 
       card.querySelectorAll('.mcq-card').forEach((c, i) => {
         c.classList.remove('mcq-selected');
-        if (i === q.answer) c.classList.add('mcq-correct');
-        else if (i === uIdx && !isCorrect) c.classList.add('mcq-wrong');
+        const chk = c.querySelector('.mcq-check');
+
+        if (i === q.answer) {
+          // الإجابة الصحيحة: علامة خضراء ✓
+          c.classList.add('mcq-correct');
+          if (chk) {
+            chk.textContent = '✓';
+            chk.style.display = 'flex';
+            chk.style.background = 'var(--success, #22c55e)';
+          }
+        } else if (i === uIdx && !isCorrect) {
+          // اختيار المستخدم الخاطئ: علامة حمراء ✗
+          c.classList.add('mcq-wrong');
+          if (chk) {
+            chk.textContent = '✗';
+            chk.style.display = 'flex';
+            chk.style.background = 'var(--error, #ef4444)';
+          }
+        } else {
+          // باقي الخيارات: أخفِ العلامة
+          if (chk) chk.style.display = 'none';
+        }
       });
       showResult(res, isCorrect,
         isCorrect ? '🌟 إجابة صحيحة! أحسنت' : `❌ الإجابة الصحيحة: ${q.options[q.answer]}`);
@@ -565,7 +585,8 @@ function retryQuestions() {
     // MCQ
     card.querySelectorAll('.mcq-card').forEach(c => {
       c.classList.remove('mcq-selected','mcq-correct','mcq-wrong');
-      c.querySelector('.mcq-check')?.classList.add('hidden');
+      const chk = c.querySelector('.mcq-check');
+      if (chk) { chk.style.display = 'none'; chk.textContent = '✓'; chk.style.background = ''; }
     });
     // TF
     card.querySelectorAll('.tf-big-card').forEach(b =>
