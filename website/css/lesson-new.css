@@ -229,10 +229,17 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 900; flex-shrink: 0;
 }
-.mcq-selected { border-color: var(--opt-color); background: white; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
-.mcq-correct { border-color: var(--success) !important; background: #F0FDF4 !important; }
-.mcq-correct .mcq-letter { background: var(--success); }
-.mcq-wrong { border-color: var(--error) !important; background: #FFF1F2 !important; opacity: 0.7; }
+.mcq-selected {
+  border-color: var(--opt-color) !important;
+  background: var(--white) !important;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+.mcq-correct { border-color: var(--success) !important; background: #F0FDF4 !important; color: #15803D !important; }
+.mcq-correct .mcq-letter { background: var(--success); color: white; }
+.mcq-correct .mcq-card-text { color: #15803D !important; }
+.mcq-wrong { border-color: var(--error) !important; background: #FFF1F2 !important; color: #991B1C !important; opacity: 1; }
+.mcq-wrong .mcq-card-text { color: #991B1C !important; }
 
 /* ===== T/F ===== */
 .tf-statement {
@@ -438,6 +445,23 @@ body.dark-mode .mcq-card:hover:not(.mcq-correct):not(.mcq-wrong) {
   color: var(--text-dark);
 }
 body.dark-mode .mcq-card-text { color: var(--text-dark); }
+
+/* إصلاح ألوان النص في الوضع الليلي عند إظهار الصحيح/الخاطئ */
+body.dark-mode .mcq-correct {
+  background: #064E3B !important;
+  border-color: #10B981 !important;
+  color: #6EE7B7 !important;
+}
+body.dark-mode .mcq-correct .mcq-card-text { color: #6EE7B7 !important; }
+body.dark-mode .mcq-correct .mcq-letter { background: #10B981; color: white; }
+
+body.dark-mode .mcq-wrong {
+  background: #450A0A !important;
+  border-color: #EF4444 !important;
+  color: #FCA5A5 !important;
+  opacity: 1;
+}
+body.dark-mode .mcq-wrong .mcq-card-text { color: #FCA5A5 !important; }
 
 /* T/F */
 body.dark-mode .tf-big-card {
