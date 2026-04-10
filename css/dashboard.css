@@ -1,0 +1,1024 @@
+/* ===================================================
+   لوحة التحكم - Dashboard
+   =================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+:root {
+  --sidebar-w: 280px;
+  --header-h: 60px;
+  --bg: #F0F4FF;
+  --white: #FFFFFF;
+  --border: #E2E8F0;
+  --text-dark: #1E293B;
+  --text-mid: #475569;
+  --text-light: #94A3B8;
+  --primary: #3B82F6;
+  --primary-light: #EFF6FF;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.15);
+  --radius: 12px;
+  --grade4: #FF6B35;
+  --grade5: #2196F3;
+  --grade6: #7C3AED;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text-dark); direction: rtl; }
+
+.hidden { display: none !important; }
+
+/* ===== الهيدر ===== */
+.dash-header {
+  height: var(--header-h);
+  background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+  gap: 16px;
+}
+
+.dash-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+}
+.dash-logo div { line-height: 1.2; }
+.dash-logo strong { font-size: 15px; font-weight: 700; display: block; }
+.dash-logo small { font-size: 11px; opacity: 0.8; }
+
+.dash-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.save-status {
+  font-size: 13px;
+  background: rgba(255,255,255,0.15);
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.hbtn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hbtn-primary { background: white; color: var(--primary); }
+.hbtn-primary:hover { background: #EFF6FF; }
+.hbtn-secondary { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+.hbtn-secondary:hover { background: rgba(255,255,255,0.25); }
+.hbtn-ghost { background: transparent; color: rgba(255,255,255,0.8); }
+.hbtn-ghost:hover { color: white; background: rgba(255,255,255,0.1); }
+.hbtn-view { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+.hbtn-view:hover { background: rgba(255,255,255,0.25); }
+
+/* ===== التخطيط ===== */
+.dash-layout {
+  display: flex;
+  height: calc(100vh - var(--header-h));
+  margin-top: var(--header-h);
+}
+
+/* ===== الشريط الجانبي ===== */
+.dash-sidebar {
+  width: var(--sidebar-w);
+  background: var(--white);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-search {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-search input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  outline: none;
+  background: var(--bg);
+}
+.sidebar-search input:focus { border-color: var(--primary); }
+
+.sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.sidebar-tree::-webkit-scrollbar { width: 4px; }
+.sidebar-tree::-webkit-scrollbar-track { background: transparent; }
+.sidebar-tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* شجرة التنقل */
+.tree-grade { margin-bottom: 4px; }
+
+.tree-grade-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  border-radius: 0;
+}
+.tree-grade-label:hover { background: var(--bg); }
+.tree-grade-label .grade-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tree-grade-label .tree-arrow {
+  margin-right: auto;
+  transition: transform 0.2s;
+  color: var(--text-light);
+  font-size: 11px;
+}
+.tree-grade.open > .tree-grade-label .tree-arrow { transform: rotate(90deg); }
+
+.tree-grade-children { display: none; }
+.tree-grade.open > .tree-grade-children { display: block; }
+
+.tree-sem-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 28px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-mid);
+  transition: background 0.15s;
+}
+.tree-sem-label:hover { background: var(--bg); }
+.tree-sem-label .tree-arrow { margin-right: auto; transition: transform 0.2s; font-size: 10px; color: var(--text-light); }
+.tree-sem.open > .tree-sem-label .tree-arrow { transform: rotate(90deg); }
+.tree-sem-children { display: none; }
+.tree-sem.open > .tree-sem-children { display: block; }
+
+.tree-unit-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 40px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-mid);
+  transition: background 0.15s;
+}
+.tree-unit-label:hover { background: var(--bg); }
+.tree-unit-label .tree-arrow { margin-right: auto; transition: transform 0.2s; font-size: 10px; color: var(--text-light); }
+.tree-unit.open > .tree-unit-label .tree-arrow { transform: rotate(90deg); }
+.tree-unit-children { display: none; }
+.tree-unit.open > .tree-unit-children { display: block; }
+
+.tree-lesson-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 52px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-mid);
+  transition: all 0.15s;
+  border-radius: 0;
+  position: relative;
+}
+.tree-lesson-item:hover { background: var(--bg); color: var(--text-dark); }
+.tree-lesson-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+.tree-lesson-item.active::before {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  border-radius: 0 3px 3px 0;
+}
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+.add-grade-btn {
+  width: 100%;
+  padding: 8px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 2px dashed var(--primary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.add-grade-btn:hover { background: var(--primary); color: white; }
+
+/* ===== المنطقة الرئيسية ===== */
+.dash-main {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+}
+.dash-main::-webkit-scrollbar { width: 6px; }
+.dash-main::-webkit-scrollbar-track { background: transparent; }
+.dash-main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ===== الصفحة الرئيسية ===== */
+.overview-title {
+  font-size: 26px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+.overview-sub {
+  color: var(--text-mid);
+  margin-bottom: 32px;
+  font-size: 15px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border-top: 4px solid;
+}
+.stat-card-num {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-card-label {
+  font-size: 13px;
+  color: var(--text-mid);
+}
+
+.overview-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.action-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  box-shadow: var(--shadow);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  transition: all 0.2s;
+  font-family: 'Cairo', sans-serif;
+}
+.action-card:hover { border-color: var(--primary); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.ac-icon { font-size: 32px; }
+.action-card strong { font-size: 15px; font-weight: 700; color: var(--text-dark); }
+.action-card small { font-size: 13px; color: var(--text-mid); }
+
+/* ===== محرر الدرس ===== */
+.lesson-editor {
+  max-width: 800px;
+}
+
+.editor-breadcrumb {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.editor-breadcrumb span { cursor: pointer; }
+.editor-breadcrumb span:hover { color: var(--primary); }
+.editor-breadcrumb .sep { color: var(--text-light); }
+
+.editor-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+.editor-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* أزرار اختيار تخطيط النقاط الرئيسية */
+.kp-layout-toggle {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+.kp-lt-btn {
+  padding: 4px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-mid);
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.kp-lt-btn:hover { border-color: var(--primary); color: var(--primary); }
+.kp-lt-active {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+.field-group { margin-bottom: 16px; }
+.field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-mid);
+  margin-bottom: 6px;
+  display: block;
+}
+.field-input, .field-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: var(--bg);
+  color: var(--text-dark);
+  resize: vertical;
+}
+.field-input:focus, .field-textarea:focus { border-color: var(--primary); background: white; }
+.field-textarea { min-height: 80px; }
+
+/* قائمة الأهداف والنقاط */
+.list-editor { display: flex; flex-direction: column; gap: 8px; }
+.list-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.list-item-row textarea {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 40px;
+  outline: none;
+  background: var(--bg);
+}
+.list-item-row textarea:focus { border-color: var(--primary); background: white; }
+.list-item-del {
+  width: 32px; height: 32px;
+  border: none; background: #FFF1F2;
+  color: var(--danger);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.list-item-del:hover { background: var(--danger); color: white; }
+.add-item-btn {
+  padding: 7px 14px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  color: var(--text-mid);
+  transition: all 0.2s;
+  text-align: center;
+}
+.add-item-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+/* ==============================================
+   محرر النصوص الغني — Rich Text Editor
+   ============================================== */
+.re-wrap {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.re-wrap:focus-within { border-color: var(--primary); }
+
+/* شريط الأدوات */
+.re-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.rtb-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+  margin-left: 4px;
+  border-left: 1px solid var(--border);
+}
+.rtb-group:first-child { border-left: none; margin-left: 0; }
+
+.rtb-btn {
+  min-width: 28px; height: 28px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  color: var(--text-dark);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.rtb-btn:hover { background: var(--white); border-color: var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.rtb-btn-danger:hover { background: #FFF1F2 !important; color: var(--danger) !important; }
+
+/* منتقي اللون */
+.rtb-color-btn {
+  position: relative;
+  width: 28px; height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--white);
+  overflow: hidden;
+  transition: all 0.15s;
+}
+.rtb-color-btn:hover { border-color: var(--primary); }
+.rtb-color-label {
+  font-size: 13px; font-weight: 900;
+  pointer-events: none;
+  position: relative; z-index: 1;
+}
+.rtb-text-color { color: #e53935; }
+.rtb-hl-color   { font-size: 11px; }
+.rtb-color-btn input[type=color] {
+  position: absolute;
+  opacity: 0;
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* قائمة الحجم */
+.rtb-select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  background: var(--white);
+  color: var(--text-dark);
+  cursor: pointer;
+  outline: none;
+}
+.rtb-select:focus { border-color: var(--primary); }
+
+/* منطقة التحرير */
+.re-content {
+  padding: 12px 16px;
+  background: var(--white);
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  line-height: 1.9;
+  outline: none;
+  direction: rtl;
+  color: var(--text-dark);
+  word-break: break-word;
+}
+.re-content:focus { background: #FAFEFF; }
+.re-content:empty::before {
+  content: attr(placeholder);
+  color: var(--text-light);
+  pointer-events: none;
+}
+
+/* ==============================================
+   النقاط الرئيسية - بطاقات قابلة للترتيب
+   ============================================== */
+.kp-list { display: flex; flex-direction: column; gap: 12px; }
+
+.kp-item-card {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.kp-item-card:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+.kp-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.kp-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-mid);
+}
+.kp-item-actions { display: flex; align-items: center; gap: 4px; }
+
+.kp-move-btn {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--text-mid);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.kp-move-btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
+.kp-move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.kp-del-btn {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.kp-del-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+/* داخل بطاقة النقطة: لا حاجة لحدود مضاعفة */
+.kp-item-card .re-wrap { border: none; border-radius: 0; }
+.kp-item-card .re-toolbar { border-bottom: 1px solid var(--border); }
+
+/* قسم الأسئلة */
+.questions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.questions-title { font-size: 16px; font-weight: 700; }
+.add-question-btn {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.add-question-btn:hover { background: #2563EB; transform: translateY(-1px); }
+
+.questions-list { display: flex; flex-direction: column; gap: 10px; }
+
+.q-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.q-item:hover { border-color: var(--primary); background: var(--primary-light); }
+.q-type-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-mcq  { background: #EDE9FE; color: #7C3AED; }
+.badge-tf   { background: #DCFCE7; color: #16A34A; }
+.badge-match { background: #FEF9C3; color: #B45309; }
+.badge-fill { background: #DBEAFE; color: #1D4ED8; }
+.fill-sentence-row { flex-wrap: wrap; gap: 6px; }
+.fill-ans-input { border-color: #22c55e !important; font-weight: 700; }
+.q-text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.q-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.q-btn {
+  width: 30px; height: 30px;
+  border: none; border-radius: 7px;
+  cursor: pointer; font-size: 13px;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.q-btn-edit { background: #EFF6FF; color: var(--primary); }
+.q-btn-edit:hover { background: var(--primary); color: white; }
+.q-btn-del { background: #FFF1F2; color: var(--danger); }
+.q-btn-del:hover { background: var(--danger); color: white; }
+
+.empty-questions {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+.editor-save-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+.save-lesson-btn {
+  padding: 10px 24px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.save-lesson-btn:hover { background: #16A34A; transform: translateY(-1px); }
+.delete-lesson-btn {
+  padding: 10px 20px;
+  background: #FFF1F2;
+  color: var(--danger);
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.delete-lesson-btn:hover { background: var(--danger); color: white; }
+
+/* ===== منشئ الأسئلة ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  backdrop-filter: blur(2px);
+}
+
+.question-builder {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(600px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 201;
+  padding: 24px;
+}
+
+.qb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.qb-header h2 { font-size: 18px; font-weight: 700; }
+.qb-close {
+  width: 32px; height: 32px;
+  border: none; background: var(--bg);
+  border-radius: 8px; cursor: pointer;
+  font-size: 16px; transition: all 0.2s;
+}
+.qb-close:hover { background: var(--danger); color: white; }
+
+/* اختيار نوع السؤال */
+.qb-type-select > p {
+  font-size: 14px; color: var(--text-mid);
+  margin-bottom: 16px; font-weight: 600;
+}
+.type-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 12px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Cairo', sans-serif;
+  text-align: center;
+}
+.type-card:hover { border-color: var(--primary); background: var(--primary-light); }
+.type-card span { font-size: 28px; }
+.type-card strong { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+.type-card small { font-size: 11px; color: var(--text-mid); }
+
+/* نموذج السؤال */
+.back-to-types {
+  background: none; border: none;
+  color: var(--primary); cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px; font-weight: 600;
+  margin-bottom: 16px; padding: 0;
+  display: block;
+}
+.back-to-types:hover { text-decoration: underline; }
+
+.qb-field { margin-bottom: 14px; }
+.qb-label {
+  font-size: 13px; font-weight: 700;
+  color: var(--text-mid); margin-bottom: 6px;
+  display: block;
+}
+.qb-input, .qb-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px; outline: none;
+  background: var(--bg); color: var(--text-dark);
+  transition: border-color 0.2s;
+}
+.qb-input:focus, .qb-textarea:focus { border-color: var(--primary); background: white; }
+.qb-textarea { resize: vertical; min-height: 60px; }
+
+.options-list { display: flex; flex-direction: column; gap: 8px; }
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.option-radio { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary); }
+.option-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px; outline: none;
+  background: var(--bg);
+}
+.option-input:focus { border-color: var(--primary); background: white; }
+.option-row.selected .option-input { border-color: var(--success); background: #F0FDF4; }
+
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.match-col-label {
+  font-size: 12px; font-weight: 700;
+  color: var(--text-mid); margin-bottom: 8px;
+  text-align: center; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.match-pairs { display: flex; flex-direction: column; gap: 8px; }
+.match-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px; outline: none;
+  background: var(--bg);
+}
+.match-input:focus { border-color: var(--primary); background: white; }
+.match-pair-row { display: flex; gap: 6px; align-items: center; }
+.match-del {
+  width: 26px; height: 26px;
+  border: none; background: #FFF1F2;
+  color: var(--danger); border-radius: 6px;
+  cursor: pointer; font-size: 12px;
+  flex-shrink: 0; transition: all 0.2s;
+}
+.match-del:hover { background: var(--danger); color: white; }
+.add-match-btn {
+  padding: 6px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px; color: var(--text-mid);
+  transition: all 0.2s; text-align: center;
+  margin-top: 4px;
+}
+.add-match-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.tf-options { display: flex; gap: 12px; margin-top: 8px; }
+.tf-opt {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  font-family: 'Cairo', sans-serif;
+  font-size: 16px; font-weight: 900;
+  transition: all 0.2s;
+  background: var(--bg);
+}
+.tf-opt:hover { border-color: var(--primary); background: var(--primary-light); }
+.tf-opt.active-true { border-color: var(--success); background: #F0FDF4; color: var(--success); }
+.tf-opt.active-false { border-color: var(--danger); background: #FFF1F2; color: var(--danger); }
+
+/* معاينة */
+.qb-preview {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  min-height: 60px;
+}
+.preview-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-light); letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 10px;
+}
+.preview-question { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.preview-options { display: flex; flex-direction: column; gap: 6px; }
+.preview-opt {
+  padding: 7px 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.preview-opt.correct { border-color: var(--success); background: #F0FDF4; color: #15803D; font-weight: 700; }
+
+.qb-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.qb-cancel {
+  padding: 9px 20px;
+  background: var(--bg); color: var(--text-mid);
+  border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer;
+  font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 600;
+  transition: all 0.2s;
+}
+.qb-cancel:hover { background: var(--border); }
+.qb-save {
+  padding: 9px 24px;
+  background: var(--primary); color: white;
+  border: none; border-radius: 8px; cursor: pointer;
+  font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700;
+  transition: all 0.2s;
+}
+.qb-save:hover { background: #2563EB; transform: translateY(-1px); }
+
+/* ===== تأكيد الحذف ===== */
+.confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm-box {
+  background: white;
+  border-radius: 14px;
+  padding: 28px 32px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  max-width: 340px;
+  width: 90%;
+}
+.confirm-box p { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.cbtn-cancel {
+  padding: 9px 20px;
+  background: var(--bg); color: var(--text-mid);
+  border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; font-family: 'Cairo', sans-serif;
+  font-size: 14px; font-weight: 600;
+}
+.cbtn-delete {
+  padding: 9px 20px;
+  background: var(--danger); color: white;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-family: 'Cairo', sans-serif;
+  font-size: 14px; font-weight: 700;
+  transition: all 0.2s;
+}
+.cbtn-delete:hover { background: #DC2626; }
+
+/* toast */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text-dark); color: white;
+  padding: 10px 20px; border-radius: 20px;
+  font-size: 14px; font-weight: 600;
+  opacity: 0; transition: all 0.3s;
+  z-index: 500; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
