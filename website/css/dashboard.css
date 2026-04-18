@@ -1010,6 +1010,227 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 }
 .cbtn-delete:hover { background: #DC2626; }
 
+/* ===================================================
+   صور الدرس - Image Editor
+   =================================================== */
+.img-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.img-item-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+.img-item-preview {
+  width: 100%; height: 120px;
+  background: #e2e8f0;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.img-item-preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.img-caption-input {
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  font-size: 12px;
+  padding: 6px 8px;
+  background: var(--white);
+}
+.img-del-btn {
+  border: none;
+  background: var(--danger);
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.img-del-btn:hover { background: #dc2626; }
+.img-add-row {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.img-upload-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  font-family: 'Cairo', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.img-upload-btn:hover { background: var(--primary); color: white; }
+.img-url-input {
+  flex: 1; min-width: 180px;
+  padding: 8px 12px; font-size: 13px;
+}
+.img-url-btn {
+  padding: 8px 14px;
+  background: var(--success);
+  color: white;
+  border: none; border-radius: 8px;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  font-family: 'Cairo', sans-serif;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.img-url-btn:hover { background: #16a34a; }
+
+/* ===================================================
+   الأقسام المخصصة - Custom Sections Editor
+   =================================================== */
+.cs-list { display: flex; flex-direction: column; gap: 12px; }
+.cs-item-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.cs-item-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+.cs-item-meta { display: flex; align-items: center; gap: 8px; flex: 1; }
+.cs-icon-input {
+  width: 44px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 16px;
+  text-align: center;
+  font-family: 'Cairo', sans-serif;
+  background: var(--bg);
+}
+.cs-title-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px; font-weight: 600;
+  font-family: 'Cairo', sans-serif;
+  background: var(--bg);
+}
+.cs-title-input:focus, .cs-icon-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.cs-item-actions { display: flex; gap: 4px; }
+/* داخل بطاقة القسم: لا حدود مضاعفة */
+.cs-item-card .re-wrap { border: none; border-radius: 0; }
+.cs-item-card .re-toolbar { border-bottom: 1px solid var(--border); }
+
+/* ===================================================
+   إدارة الطلاب - Student Panel
+   =================================================== */
+.sp-dash-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.sp-dash-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.sp-dash-sub   { font-size: 13px; color: var(--text-mid); }
+.back-overview-btn {
+  padding: 8px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer; font-family: 'Cairo', sans-serif;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-mid);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.back-overview-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+.sp-add-form {
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+}
+.sp-add-btn {
+  padding: 10px 20px;
+  background: #7C3AED;
+  color: white; border: none;
+  border-radius: 8px; cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px; font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.sp-add-btn:hover { background: #6D28D9; }
+
+.sp-empty {
+  text-align: center; padding: 40px;
+  color: var(--text-mid); font-size: 14px;
+}
+
+.sp-table-wrap { overflow-x: auto; }
+.sp-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.sp-table thead th {
+  background: var(--bg); padding: 10px 12px;
+  text-align: right; font-weight: 700;
+  color: var(--text-mid); border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.sp-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.sp-table tbody tr:hover { background: var(--bg); }
+.sp-table tbody td { padding: 10px 12px; vertical-align: middle; }
+
+.sp-rank { font-size: 18px; text-align: center; }
+.sp-student-name { font-weight: 700; font-size: 14px; }
+.sp-grade-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.sp-pass-cell { display: flex; align-items: center; gap: 6px; }
+.sp-pass-dots { font-size: 14px; letter-spacing: 2px; }
+.sp-show-pass {
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; opacity: 0.5; transition: opacity 0.15s;
+}
+.sp-show-pass:hover { opacity: 1; }
+.sp-pts-cell  { font-size: 15px; font-weight: 800; color: #F59E0B; }
+.sp-lc-cell   { font-size: 13px; color: var(--text-mid); text-align: center; }
+.sp-actions-cell { display: flex; gap: 6px; }
+
+.sp-reset-btn {
+  padding: 5px 10px;
+  background: #EFF6FF; color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  font-family: 'Cairo', sans-serif;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.sp-reset-btn:hover { background: #1D4ED8; color: white; }
+
+.sp-del-btn {
+  padding: 5px 10px;
+  background: #FEF2F2; color: #DC2626;
+  border: 1px solid #FECACA;
+  border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  font-family: 'Cairo', sans-serif;
+  transition: all 0.15s;
+}
+.sp-del-btn:hover { background: #DC2626; color: white; }
+
 /* toast */
 .toast {
   position: fixed;
@@ -1021,4 +1242,189 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
   opacity: 0; transition: all 0.3s;
   z-index: 500; white-space: nowrap;
 }
+
+/* ===================================================
+   نافذة رمز دخول المعلم — PIN Modal
+   =================================================== */
+.pin-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+.pin-overlay.hidden { display: none; }
+
+.pin-modal {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 48px 40px 40px;
+  width: 360px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+
+.pin-modal-icon { font-size: 52px; line-height: 1; }
+
+.pin-modal-title {
+  font-size: 22px; font-weight: 700;
+  color: var(--text-dark); margin: 0;
+}
+
+.pin-modal-hint {
+  font-size: 14px; color: var(--text-mid);
+  margin: 0; line-height: 1.6;
+}
+
+.pin-input {
+  width: 100%; padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 20px; font-family: inherit;
+  text-align: center; letter-spacing: 6px;
+  color: var(--text-dark);
+  transition: border-color 0.2s;
+  direction: ltr;
+}
+.pin-input:focus { outline: none; border-color: var(--primary); }
+
+.pin-error {
+  color: var(--danger); font-size: 13px;
+  font-weight: 600; margin: -8px 0;
+}
+.pin-error.hidden { display: none; }
+
+.pin-submit-btn {
+  width: 100%; padding: 14px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.pin-submit-btn:hover  { background: #2563EB; }
+.pin-submit-btn:active { transform: scale(0.98); }
+.pin-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===================================================
+   بطاقة رفع Excel
+   =================================================== */
+.sp-excel-info {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #1E40AF;
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+
+.sp-excel-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.sp-excel-template-btn {
+  padding: 10px 20px;
+  background: #F1F5F9;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sp-excel-template-btn:hover { background: #E2E8F0; }
+
+.sp-excel-upload-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #2196F3, #7C3AED);
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-block;
+}
+.sp-excel-upload-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.sp-excel-preview {
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #FAFAFA;
+  margin-top: 8px;
+}
+.sp-excel-preview.hidden { display: none; }
+
+.sp-excel-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sp-excel-count {
+  background: #DCFCE7;
+  color: #166534;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sp-excel-err-count {
+  background: #FEF9C3;
+  color: #854D0E;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sp-excel-errlist {
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #9A3412;
+  margin-bottom: 12px;
+  list-style: disc;
+  padding-right: 28px;
+}
+
+.sp-excel-table-wrap {
+  max-height: 260px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+
+.sp-excel-confirm-btn {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px;
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sp-excel-confirm-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+.sp-excel-confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }

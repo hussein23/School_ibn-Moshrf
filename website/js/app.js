@@ -68,6 +68,9 @@ function _renderHome() {
       </div>
     </div>
 
+    <!-- ===== شريط تسجيل دخول الطالب ===== -->
+    <div id="student-bar"></div>
+
     <!-- ===== Hero ===== -->
     <div class="home-hero">
       <div class="hero-stars">⭐ ⭐ ⭐</div>
@@ -77,7 +80,9 @@ function _renderHome() {
     <div class="grades-grid">
       ${Object.values(CURRICULUM).map(g => gradeCard(g)).join('')}
     </div>
+
   `;
+  if (window.StudentAuth) window.StudentAuth.updateStudentBar();
   addPageEnterAnimation();
 }
 
