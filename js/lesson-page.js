@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const lesson = unit.lessons.find(l => l.id === lessonId);
 
   document.title = `${lesson.name} - المهارات الرقمية`;
+  // تسجيل معرّف الدرس لنظام النقاط
+  window._currentLessonId = lessonId;
 
   // شريط التنقل
   document.getElementById('breadcrumb').innerHTML = `
@@ -102,6 +104,19 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       ${renderKeyPoints(lesson, unit.color)}
     </div>
+
+    <!-- ===== صور الدرس ===== -->
+    ${renderLessonImages(lesson, unit.color)}
+
+    <!-- ===== الأقسام المخصصة ===== -->
+    ${(lesson.customSections || []).map(cs => `
+    <div class="lp-section">
+      <div class="lp-section-header" style="--sec-color:${unit.color}">
+        <div class="lp-section-icon">${cs.icon || '📌'}</div>
+        <h2>${cs.title || 'قسم'}</h2>
+      </div>
+      <div class="lp-summary" style="border-right-color:${unit.color}">${cs.content}</div>
+    </div>`).join('')}
 
     <!-- ===== الأسئلة التفاعلية ===== -->
     <div class="lp-section lp-quiz-section">
@@ -184,4 +199,27 @@ function renderKeyPoints(lesson, color) {
   }
 
   return '';
+}
+
+// ===================================================
+//  عرض صور الدرس
+// ===================================================
+function renderLessonImages(lesson, color) {
+  const imgs = (lesson.images || []).filter(img => img.src);
+  if (!imgs.length) return '';
+  return `
+    <div class="lp-section">
+      <div class="lp-section-header" style="--sec-color:${color}">
+        <div class="lp-section-icon">🖼️</div>
+        <h2>صور الدرس</h2>
+      </div>
+      <div class="lp-img-gallery">
+        ${imgs.map(img => `
+          <div class="lp-img-item">
+            <img src="${img.src}" alt="${img.caption || ''}" loading="lazy">
+            ${img.caption ? `<div class="lp-img-caption">${img.caption}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
 }

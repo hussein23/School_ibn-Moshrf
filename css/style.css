@@ -69,14 +69,16 @@ header {
 }
 
 .header-inner {
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 70px;
-  gap: 16px;
+  gap: 14px;
 }
+/* الشريط التنقلي يتقلص عند الحاجة */
+.header-inner nav { min-width: 0; overflow: hidden; }
 
 .theme-toggle {
   width: 40px;
@@ -1884,21 +1886,6 @@ textarea:focus {
     min-height: auto;
   }
 
-/* للشاشات الصغيرة */
-@media (max-width: 768px) {
-  .match-wrapper {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .match-right-col {
-    min-height: auto;
-  }
-
-  .match-items-right {
-    min-height: auto;
-  }
-
   .match-svg {
     display: none;
   }
@@ -2112,3 +2099,196 @@ textarea:focus {
   border: 1px solid #FECDD3;
   color: #B91C1C;
 }
+
+/* ===================================================
+   شريط تسجيل دخول الطالب — Student Bar (مستقل تماماً)
+   =================================================== */
+#student-bar { margin: 16px 0; }
+
+.sb-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #4338CA 0%, #6D28D9 50%, #1D4ED8 100%);
+  border-radius: 20px;
+  padding: 24px 32px;
+  color: #ffffff;
+  box-shadow: 0 4px 24px rgba(99,60,219,0.25);
+}
+
+.sb-card-bg {
+  position: absolute;
+  left: -10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 110px;
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+.sb-card-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  row-gap: 14px;
+}
+
+/* بلوك المعلومة الواحدة — مستقل عن school-info-block */
+.sb-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  flex: 1;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.sb-block-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.sb-block-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sb-block-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.sb-block-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.sb-divider {
+  width: 1px;
+  height: 50px;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+
+/* أفاتار الطالب */
+.sb-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 900;
+  color: #ffffff; flex-shrink: 0;
+}
+
+.sb-pts-val { color: #FCD34D !important; font-weight: 900; }
+
+/* زر الخروج */
+.sb-logout-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #ffffff; padding: 9px 18px;
+  border-radius: 20px; font-family: inherit;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: background 0.2s;
+  white-space: nowrap;
+  margin-right: 0;
+  flex-shrink: 0;
+  align-self: center;
+}
+.sb-logout-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* حقول الدخول */
+.sb-val-input {
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  color: #ffffff; padding: 9px 14px;
+  border-radius: 10px; font-family: inherit;
+  font-size: 14px; font-weight: 700; width: 150px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.sb-val-input::placeholder { color: rgba(255,255,255,0.55); font-weight: 400; }
+.sb-val-input:focus {
+  border-color: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.22);
+}
+
+/* زر الدخول */
+.sb-login-btn {
+  background: #ffffff;
+  color: #4338CA;
+  padding: 10px 22px;
+  border: none; border-radius: 20px;
+  font-family: inherit; font-size: 14px;
+  font-weight: 800; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  margin-right: 0;
+  flex-shrink: 0;
+  align-self: center;
+}
+.sb-login-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.22); }
+.sb-login-btn:active { transform: translateY(0); }
+.sb-login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.sb-err-msg {
+  font-size: 12px; color: #FCA5A5;
+  font-weight: 700; margin-right: 10px;
+  flex-basis: 100%;
+  text-align: center;
+}
+.sb-err-msg.hidden { display: none; }
+
+@keyframes sbShake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-7px); }
+  60%      { transform: translateX(7px); }
+}
+.sb-err-shake { animation: sbShake 0.35s ease; }
+
+@keyframes ptsBump {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.pts-bump { animation: ptsBump 0.4s ease; }
+
+/* إشعار النقاط */
+.points-toast {
+  position: fixed; bottom: 28px; left: 28px;
+  background: #1E293B; color: #ffffff;
+  border-radius: 16px; padding: 14px 20px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  z-index: 9999;
+  transform: translateY(120px);
+  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.points-toast.pt-show { transform: translateY(0); }
+.pt-star { font-size: 28px; line-height: 1; }
+.pt-body { display: flex; flex-direction: column; gap: 2px; }
+.pt-body strong { font-size: 15px; font-weight: 700; }
+.pt-body span   { font-size: 12px; opacity: 0.75; }
+
+/* استجابة الجوال */
+@media (max-width: 640px) {
+  .sb-card       { padding: 18px 16px; border-radius: 14px; }
+  .sb-block      { padding: 0 12px; }
+  .sb-block-value{ font-size: 16px; }
+  .sb-val-input  { width: 130px; font-size: 13px; }
+  .sb-login-btn  { padding: 9px 16px; font-size: 13px; }
+  .sb-divider    { display: none; }
+}
+

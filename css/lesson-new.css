@@ -527,3 +527,37 @@ body.dark-mode .lp-check-btn { color: white; }
 /* نتيجة السؤال */
 body.dark-mode .q-result-ok  { background: #064E3B; color: #6EE7B7; border-color: #065F46; }
 body.dark-mode .q-result-err { background: #7F1D1D; color: #FCA5A5; border-color: #991B1B; }
+
+/* ===================================================
+   معرض الصور في صفحة الدرس
+   =================================================== */
+.lp-img-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.lp-img-item {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  background: var(--bg);
+  transition: transform 0.2s;
+}
+.lp-img-item:hover { transform: translateY(-3px); }
+.lp-img-item img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 240px;
+}
+.lp-img-caption {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-mid);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  background: var(--white);
+}
+
+body.dark-mode .lp-img-item { background: var(--white); }
+body.dark-mode .lp-img-caption { background: var(--white); color: var(--text-mid); border-color: var(--border); }

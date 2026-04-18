@@ -562,6 +562,7 @@ function showFinalResult(correct, total) {
       </div>
       <div class="res-pct-label">${pct}%</div>
       <p class="res-msg">${data.msg}</p>
+      <div id="res-points-earned" class="res-points-earned hidden"></div>
       <div class="res-btns">
         <button class="res-btn-retry" onclick="retryQuestions()">🔄 أعد المحاولة</button>
         <button class="res-btn-close" onclick="closeResult()">✕ إغلاق</button>

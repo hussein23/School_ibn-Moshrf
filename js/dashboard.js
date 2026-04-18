@@ -3,15 +3,103 @@
 //  المرحلة الأولى: localStorage + تصدير/استيراد
 // ===================================================
 
-const STORAGE_KEY = 'ibn_moshrf_curriculum';
-let curriculum = {};         // البيانات الحالية (معدّلة أو أصلية)
-let activeLesson = null;     // { gradeId, semId, unitId, lessonId }
-let qbState = {};            // حالة منشئ الأسئلة
+const STORAGE_KEY    = 'ibn_moshrf_curriculum';
+const TEACHER_PIN_KEY = 'ibn_moshrf_teacher_pin';
+const TEACHER_SESSION = 'ibn_moshrf_teacher_auth';
+const PIN_SALT        = 'ibn_teacher_2025';
+
+let curriculum = {};
+let activeLesson = null;
+let qbState = {};
+
+// ===================================================
+//  حماية لوحة التحكم — رمز PIN للمعلم
+// ===================================================
+async function _hashPin(pin) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin + PIN_SALT);
+  const buf  = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function _isTeacherAuthed() {
+  return sessionStorage.getItem(TEACHER_SESSION) === '1';
+}
+
+function showPinModal() {
+  const overlay = document.getElementById('pin-overlay');
+  if (!overlay) return;
+  const stored  = localStorage.getItem(TEACHER_PIN_KEY);
+  const title   = document.getElementById('pin-modal-title');
+  const hint    = document.getElementById('pin-modal-hint');
+  if (!stored) {
+    if (title) title.textContent = 'إنشاء رمز الدخول للمعلم';
+    if (hint)  hint.textContent  = 'أنشئ رمزاً سرياً (4 أحرف على الأقل) لحماية لوحة التحكم';
+  } else {
+    if (title) title.textContent = 'لوحة تحكم المعلم 🔒';
+    if (hint)  hint.textContent  = 'أدخل رمز الدخول للمتابعة';
+  }
+  overlay.classList.remove('hidden');
+  setTimeout(() => document.getElementById('pin-input')?.focus(), 100);
+}
+
+async function submitPin() {
+  const pinEl  = document.getElementById('pin-input');
+  const errEl  = document.getElementById('pin-error');
+  const btn    = document.getElementById('pin-submit-btn');
+  const pin    = (pinEl?.value || '').trim();
+
+  if (pin.length < 4) {
+    if (errEl) { errEl.textContent = 'الرمز يجب أن يكون 4 أحرف على الأقل'; errEl.classList.remove('hidden'); }
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  const hashed = await _hashPin(pin);
+  if (btn) btn.disabled = false;
+
+  const stored = localStorage.getItem(TEACHER_PIN_KEY);
+
+  if (!stored) {
+    // أول مرة: حفظ الرمز الجديد
+    localStorage.setItem(TEACHER_PIN_KEY, hashed);
+    document.getElementById('pin-overlay').classList.add('hidden');
+    sessionStorage.setItem(TEACHER_SESSION, '1');
+    _initDashboard();
+    return;
+  }
+
+  if (hashed !== stored) {
+    if (errEl) { errEl.textContent = 'رمز الدخول غير صحيح'; errEl.classList.remove('hidden'); }
+    if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+    return;
+  }
+
+  document.getElementById('pin-overlay').classList.add('hidden');
+  sessionStorage.setItem(TEACHER_SESSION, '1');
+  _initDashboard();
+}
+
+function resetTeacherPin() {
+  const conf = confirm('هل تريد إعادة تعيين رمز الدخول؟ ستحتاج لإنشاء رمز جديد في المرة القادمة.');
+  if (!conf) return;
+  localStorage.removeItem(TEACHER_PIN_KEY);
+  sessionStorage.removeItem(TEACHER_SESSION);
+  location.reload();
+}
 
 // ===================================================
 //  تهيئة
 // ===================================================
 function init() {
+  if (!_isTeacherAuthed()) {
+    showPinModal();
+    return;
+  }
+  _initDashboard();
+}
+
+function _initDashboard() {
   loadCurriculum();
   renderSidebar();
   renderStats();
@@ -176,6 +264,182 @@ function renderStats() {
 function showOverview() {
   document.getElementById('overview-panel').classList.remove('hidden');
   document.getElementById('lesson-editor').classList.add('hidden');
+  document.getElementById('student-panel').classList.add('hidden');
+}
+
+// ===================================================
+//  إدارة الطلاب - Student Management
+// ===================================================
+function showStudentPanel() {
+  document.getElementById('overview-panel').classList.add('hidden');
+  document.getElementById('lesson-editor').classList.add('hidden');
+  document.getElementById('student-panel').classList.remove('hidden');
+  renderStudentPanel();
+}
+
+function renderStudentPanel() {
+  const panel    = document.getElementById('student-panel');
+  const students = window.StudentAuth ? StudentAuth.getAllStudents() : [];
+  const gradeNames  = { grade4: 'الصف الرابع', grade5: 'الصف الخامس', grade6: 'الصف السادس' };
+  const gradeColors = { grade4: '#FF6B35', grade5: '#2196F3', grade6: '#7C3AED' };
+  const gradeIcons  = { grade4: '🟠', grade5: '🔵', grade6: '🟣' };
+
+  const totalPts = students.reduce((s, st) => s + (st.points || 0), 0);
+
+  panel.innerHTML = `
+    <div class="sp-dash-header">
+      <div>
+        <h2 class="sp-dash-title">👥 إدارة الطلاب</h2>
+        <p class="sp-dash-sub">${students.length} طالب مسجّل · إجمالي النقاط: ${totalPts}</p>
+      </div>
+      <button class="back-overview-btn" onclick="showOverview()">← رجوع</button>
+    </div>
+
+    <!-- إضافة طالب جديد -->
+    <div class="editor-card">
+      <div class="editor-card-title">➕ إضافة طالب جديد</div>
+      <div class="sp-add-form">
+        <div class="field-group" style="flex:2">
+          <label class="field-label">اسم الطالب</label>
+          <input class="field-input" id="sp-new-name" placeholder="الاسم الكامل للطالب">
+        </div>
+        <div class="field-group" style="flex:1">
+          <label class="field-label">الصف</label>
+          <select class="field-input" id="sp-new-grade">
+            <option value="">— اختر —</option>
+            <option value="grade4">🟠 الصف الرابع</option>
+            <option value="grade5">🔵 الصف الخامس</option>
+            <option value="grade6">🟣 الصف السادس</option>
+          </select>
+        </div>
+        <div class="field-group" style="flex:1">
+          <label class="field-label">كلمة المرور</label>
+          <input class="field-input" id="sp-new-pass" placeholder="مثال: 1234">
+        </div>
+        <div class="field-group" style="flex:0;padding-top:24px">
+          <button class="sp-add-btn" onclick="addStudentFromDash()">+ إضافة</button>
+        </div>
+      </div>
+      <div class="sm-error hidden" id="sp-add-error" style="margin-top:8px"></div>
+    </div>
+
+    <!-- رفع قائمة Excel -->
+    <div class="editor-card">
+      <div class="editor-card-title">📊 رفع قائمة طلاب من Excel / CSV</div>
+      <div class="sp-excel-info">
+        <p>ارفع ملف Excel أو CSV يحتوي على أعمدة: <strong>الاسم</strong> — <strong>الصف</strong> — <strong>كلمة المرور</strong></p>
+        <p style="margin-top:6px;color:#64748b;font-size:13px">الصف يُكتب: 4 أو 5 أو 6 (أو grade4 / grade5 / grade6)</p>
+      </div>
+      <div class="sp-excel-actions">
+        <button class="sp-excel-template-btn" onclick="downloadExcelTemplate()">⬇ تحميل نموذج Excel</button>
+        <label class="sp-excel-upload-btn">
+          📂 اختر ملف Excel / CSV
+          <input type="file" id="sp-excel-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelUpload(event)">
+        </label>
+      </div>
+      <div id="sp-excel-preview" class="sp-excel-preview hidden"></div>
+      <div id="sp-excel-error" class="sm-error hidden" style="margin-top:8px"></div>
+    </div>
+
+    <!-- قائمة الطلاب -->
+    <div class="editor-card">
+      <div class="editor-card-title">🏆 لوحة الشرف — قائمة الطلاب</div>
+      ${students.length === 0
+        ? `<div class="sp-empty">لا يوجد طلاب مسجّلون بعد — أضف طالباً الآن</div>`
+        : `<div class="sp-table-wrap">
+            <table class="sp-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>الاسم</th>
+                  <th>الصف</th>
+                  <th>كلمة المرور</th>
+                  <th>النقاط ⭐</th>
+                  <th>دروس محلولة</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${students.map((st, i) => {
+                  const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
+                  const gc    = gradeColors[st.grade] || '#64748B';
+                  const gi    = gradeIcons[st.grade]  || '📚';
+                  const gn    = gradeNames[st.grade]  || st.grade;
+                  const lc    = Object.keys(st.lessons || {}).length;
+                  return `
+                    <tr>
+                      <td class="sp-rank">${medal}</td>
+                      <td class="sp-student-name">${escHtml(st.username)}</td>
+                      <td><span class="sp-grade-badge" style="background:${gc}20;color:${gc}">${gi} ${gn}</span></td>
+                      <td class="sp-pass-cell">
+                        <span class="sp-pass-dots" id="pd-${st.id}">••••</span>
+                        <button class="sp-show-pass" onclick="togglePass('${escHtml(st.id)}')" title="كلمة المرور مشفرة">🔒</button>
+                      </td>
+                      <td class="sp-pts-cell">${st.points || 0}</td>
+                      <td class="sp-lc-cell">${lc}</td>
+                      <td class="sp-actions-cell">
+                        <button class="sp-reset-btn" onclick="resetStudentFromDash('${st.id}')" title="صفر النقاط">🔄 صفر</button>
+                        <button class="sp-del-btn"   onclick="deleteStudentFromDash('${st.id}')" title="حذف الطالب">🗑</button>
+                      </td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>`
+      }
+    </div>
+  `;
+}
+
+async function addStudentFromDash() {
+  const name  = document.getElementById('sp-new-name').value;
+  const grade = document.getElementById('sp-new-grade').value;
+  const pass  = document.getElementById('sp-new-pass').value;
+  const err   = document.getElementById('sp-add-error');
+  const btn   = document.querySelector('.sp-add-btn');
+
+  if (!window.StudentAuth) return;
+  if (btn) btn.disabled = true;
+  const result = await StudentAuth.addStudent(name, grade, pass);
+  if (btn) btn.disabled = false;
+
+  if (!result.ok) {
+    err.textContent = result.msg;
+    err.classList.remove('hidden');
+    return;
+  }
+  err.classList.add('hidden');
+  document.getElementById('sp-new-name').value = '';
+  document.getElementById('sp-new-grade').value = '';
+  document.getElementById('sp-new-pass').value = '';
+  showToast(`✅ تم إضافة الطالب: ${result.student.username}`);
+  renderStudentPanel();
+}
+
+function deleteStudentFromDash(id) {
+  showConfirm('سيتم حذف الطالب ونقاطه نهائياً. هل أنت متأكد؟', () => {
+    StudentAuth.deleteStudent(id);
+    showToast('🗑 تم حذف الطالب');
+    renderStudentPanel();
+  });
+}
+
+function resetStudentFromDash(id) {
+  showConfirm('سيتم تصفير نقاط الطالب وسجل الدروس. هل أنت متأكد؟', () => {
+    StudentAuth.resetPoints(id);
+    showToast('🔄 تم تصفير النقاط');
+    renderStudentPanel();
+  });
+}
+
+function togglePass(id) {
+  const el = document.getElementById('pd-' + id);
+  if (!el) return;
+  // كلمات المرور مشفرة — لا يمكن عرضها
+  if (el.textContent === '••••') {
+    el.textContent = '🔒 مشفرة';
+    setTimeout(() => { el.textContent = '••••'; }, 2000);
+  }
 }
 
 // ===================================================
@@ -295,6 +559,7 @@ function selectLesson(gradeId, semId, unitId, lessonId) {
     }
   }
 
+  document.getElementById('student-panel').classList.add('hidden');
   renderLessonEditor();
 }
 
@@ -370,6 +635,31 @@ function renderLessonEditor() {
         ${lesson.keyPoints.map((kp, i) => renderKPItem(kp, i, lesson.keyPoints.length)).join('')}
       </div>
       <button class="add-item-btn" onclick="addKeyPoint()" style="margin-top:12px">+ إضافة نقطة</button>
+    </div>
+
+    <!-- الصور -->
+    <div class="editor-card">
+      <div class="editor-card-title">🖼️ صور الدرس</div>
+      <div class="img-editor-grid" id="images-list">
+        ${(lesson.images || []).map((img, i) => renderImageItem(img, i)).join('')}
+      </div>
+      <div class="img-add-row">
+        <label class="img-upload-btn" title="رفع صورة من الجهاز">
+          📁 رفع صورة
+          <input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this, -1)">
+        </label>
+        <input class="field-input img-url-input" id="img-url-input" placeholder="أو أدخل رابط الصورة (URL)">
+        <button class="img-url-btn" onclick="addImageFromURL()">+ إضافة</button>
+      </div>
+    </div>
+
+    <!-- الأقسام المخصصة -->
+    <div class="editor-card">
+      <div class="editor-card-title">📌 أقسام مخصصة</div>
+      <div class="cs-list" id="custom-sections-list">
+        ${(lesson.customSections || []).map((cs, i) => renderCSItem(cs, i, (lesson.customSections || []).length)).join('')}
+      </div>
+      <button class="add-item-btn" onclick="addCustomSection()" style="margin-top:12px">+ إضافة قسم جديد</button>
     </div>
 
     <!-- الأسئلة -->
@@ -513,10 +803,137 @@ function saveLessonChanges() {
   const kpEditors = document.querySelectorAll('#keypoints-list .re-content');
   lesson.keyPoints = [...kpEditors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
 
+  // قراءة الأقسام المخصصة من DOM
+  _syncCSFromDOM();
+
   saveCurriculum();
   renderSidebar();
   renderStats();
   showToast('✅ تم حفظ التعديلات');
+}
+
+// ===================================================
+//  إدارة الصور
+// ===================================================
+function renderImageItem(img, i) {
+  return `
+    <div class="img-item-card" id="img-card-${i}">
+      <div class="img-item-preview">
+        <img src="${escHtml(img.src)}" alt="${escHtml(img.caption || '')}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>خطأ</text></svg>'">
+      </div>
+      <input class="field-input img-caption-input" placeholder="تعليق على الصورة (اختياري)"
+             value="${escHtml(img.caption || '')}" onchange="_updateImgCaption(${i}, this.value)">
+      <button class="img-del-btn" onclick="deleteImage(${i})">🗑</button>
+    </div>`;
+}
+
+function handleImageFile(input, _unused) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    _addImageToLesson(e.target.result, file.name.replace(/\.[^.]+$/, ''));
+  };
+  reader.readAsDataURL(file);
+}
+
+function addImageFromURL() {
+  const input = document.getElementById('img-url-input');
+  const url = input.value.trim();
+  if (!url) return;
+  _addImageToLesson(url, '');
+  input.value = '';
+}
+
+function _addImageToLesson(src, caption) {
+  const { lesson } = getLesson(activeLesson);
+  if (!lesson.images) lesson.images = [];
+  lesson.images.push({ src, caption });
+  // إعادة رسم قائمة الصور فقط
+  const list = document.getElementById('images-list');
+  if (list) {
+    list.innerHTML = lesson.images.map((img, i) => renderImageItem(img, i)).join('');
+  }
+}
+
+function deleteImage(i) {
+  const { lesson } = getLesson(activeLesson);
+  if (!lesson.images) return;
+  lesson.images.splice(i, 1);
+  const list = document.getElementById('images-list');
+  if (list) list.innerHTML = lesson.images.map((img, j) => renderImageItem(img, j)).join('');
+}
+
+function _updateImgCaption(i, val) {
+  const { lesson } = getLesson(activeLesson);
+  if (lesson.images && lesson.images[i]) lesson.images[i].caption = val;
+}
+
+// ===================================================
+//  إدارة الأقسام المخصصة
+// ===================================================
+function renderCSItem(cs, i, total) {
+  return `
+    <div class="cs-item-card" id="cs-card-${i}">
+      <div class="cs-item-header">
+        <div class="cs-item-meta">
+          <input class="cs-icon-input" id="cs-icon-${i}" value="${escHtml(cs.icon || '📌')}" placeholder="أيقونة" maxlength="4">
+          <input class="cs-title-input" id="cs-title-${i}" value="${escHtml(cs.title || '')}" placeholder="عنوان القسم">
+        </div>
+        <div class="cs-item-actions">
+          <button class="kp-move-btn" onclick="moveCustomSection(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="kp-move-btn" onclick="moveCustomSection(${i}, 1)" ${i === total - 1 ? 'disabled' : ''}>↓</button>
+          <button class="kp-del-btn" onclick="deleteCustomSection(${i})">✕</button>
+        </div>
+      </div>
+      ${renderRichEditor(cs.content || '', 'cs-re-' + i, 80, 'اكتب محتوى القسم هنا...')}
+    </div>`;
+}
+
+function addCustomSection() {
+  _syncCSFromDOM();
+  const { lesson } = getLesson(activeLesson);
+  if (!lesson.customSections) lesson.customSections = [];
+  lesson.customSections.push({ id: 'cs_' + Date.now(), title: '', icon: '📌', content: '' });
+  _reRenderCSList();
+}
+
+function deleteCustomSection(i) {
+  _syncCSFromDOM();
+  const { lesson } = getLesson(activeLesson);
+  if (lesson.customSections) lesson.customSections.splice(i, 1);
+  _reRenderCSList();
+}
+
+function moveCustomSection(i, dir) {
+  _syncCSFromDOM();
+  const { lesson } = getLesson(activeLesson);
+  const j = i + dir;
+  if (!lesson.customSections || j < 0 || j >= lesson.customSections.length) return;
+  [lesson.customSections[i], lesson.customSections[j]] = [lesson.customSections[j], lesson.customSections[i]];
+  _reRenderCSList();
+}
+
+function _reRenderCSList() {
+  const { lesson } = getLesson(activeLesson);
+  const list = document.getElementById('custom-sections-list');
+  if (!list) return;
+  const cs = lesson.customSections || [];
+  list.innerHTML = cs.map((s, i) => renderCSItem(s, i, cs.length)).join('');
+}
+
+function _syncCSFromDOM() {
+  if (!activeLesson) return;
+  const { lesson } = getLesson(activeLesson);
+  const cards = document.querySelectorAll('#custom-sections-list .cs-item-card');
+  if (!cards.length) return;
+  lesson.customSections = [...cards].map((card, i) => {
+    const icon    = card.querySelector(`#cs-icon-${i}`)?.value || '📌';
+    const title   = card.querySelector(`#cs-title-${i}`)?.value || '';
+    const content = card.querySelector('.re-content')?.innerHTML.trim() || '';
+    const prev    = (lesson.customSections || [])[i] || {};
+    return { id: prev.id || 'cs_' + Date.now(), icon, title, content };
+  });
 }
 
 function deleteLesson() {
@@ -554,7 +971,9 @@ function addLessonToUnit(gradeId, semId, unitId) {
     objectives: [''],
     summary: '',
     keyPoints: [''],
-    questions: []
+    questions: [],
+    images: [],
+    customSections: []
   };
   unit.lessons.push(newLesson);
   saveCurriculum();
@@ -993,6 +1412,194 @@ function showToast(msg) {
   toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ===================================================
+//  رفع الطلاب من Excel / CSV
+// ===================================================
+
+// تحويل رقم/نص الصف إلى المفتاح الصحيح
+function _parseGrade(raw) {
+  const v = String(raw || '').trim().toLowerCase()
+    .replace('الرابع','4').replace('الخامس','5').replace('السادس','6')
+    .replace('fourth','4').replace('fifth','5').replace('sixth','6');
+  if (v === '4' || v === 'grade4') return 'grade4';
+  if (v === '5' || v === 'grade5') return 'grade5';
+  if (v === '6' || v === 'grade6') return 'grade6';
+  return null;
+}
+
+// تحميل نموذج Excel
+function downloadExcelTemplate() {
+  if (!window.XLSX) { showToast('⚠ مكتبة Excel غير محملة'); return; }
+
+  const data = [
+    ['الاسم', 'الصف', 'كلمة المرور'],
+    ['أحمد محمد العلي', '4', '1234'],
+    ['فاطمة علي الزهراني', '5', '5678'],
+    ['خالد سعد المطيري', '6', 'abcd'],
+    ['نورة عبدالله القحطاني', '4', 'pass1'],
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+
+  // عرض الأعمدة
+  ws['!cols'] = [{ wch: 30 }, { wch: 12 }, { wch: 16 }];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'الطلاب');
+  XLSX.writeFile(wb, 'نموذج_قائمة_الطلاب.xlsx');
+  showToast('✅ تم تحميل النموذج');
+}
+
+// معالجة ملف Excel المرفوع
+function handleExcelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const errEl     = document.getElementById('sp-excel-error');
+  const previewEl = document.getElementById('sp-excel-preview');
+
+  errEl.classList.add('hidden');
+  previewEl.classList.add('hidden');
+  previewEl.innerHTML = '';
+
+  if (!window.XLSX) {
+    errEl.textContent = '⚠ مكتبة Excel غير محملة، أعد تحميل الصفحة.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const wb    = XLSX.read(e.target.result, { type: 'binary' });
+      const ws    = wb.Sheets[wb.SheetNames[0]];
+      const rows  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // تجاهل الصف الأول (العناوين) إذا كان نصياً
+      let dataRows = rows.filter(r => r.some(c => c !== ''));
+      if (dataRows.length && isNaN(Number(dataRows[0][1])) &&
+          String(dataRows[0][1]).toLowerCase().includes('صف') === false &&
+          !_parseGrade(dataRows[0][1])) {
+        dataRows = dataRows.slice(1); // تجاهل الهيدر
+      }
+
+      const parsed  = [];
+      const errors  = [];
+      const gradeNames = { grade4: 'الرابع', grade5: 'الخامس', grade6: 'السادس' };
+
+      dataRows.forEach((row, i) => {
+        const name  = String(row[0] || '').trim();
+        const grade = _parseGrade(row[1]);
+        const pass  = String(row[2] || '').trim();
+
+        if (!name && !grade && !pass) return; // صف فارغ
+
+        if (!name)  { errors.push(`السطر ${i+2}: اسم الطالب مفقود`); return; }
+        if (!grade) { errors.push(`السطر ${i+2}: الصف غير صحيح (${row[1]})`); return; }
+        if (!pass)  { errors.push(`السطر ${i+2}: كلمة المرور مفقودة`); return; }
+
+        parsed.push({ name, grade, pass });
+      });
+
+      if (parsed.length === 0 && errors.length === 0) {
+        errEl.textContent = '⚠ الملف فارغ أو لا يحتوي بيانات.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      // بناء معاينة
+      let html = `
+        <div class="sp-excel-summary">
+          <span class="sp-excel-count">✅ ${parsed.length} طالب جاهز للإضافة</span>
+          ${errors.length ? `<span class="sp-excel-err-count">⚠ ${errors.length} سطر به مشكلة</span>` : ''}
+        </div>`;
+
+      if (errors.length) {
+        html += `<ul class="sp-excel-errlist">${errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+      }
+
+      if (parsed.length) {
+        html += `
+          <div class="sp-excel-table-wrap">
+            <table class="sp-table" style="margin-top:10px">
+              <thead><tr><th>#</th><th>الاسم</th><th>الصف</th><th>كلمة المرور</th></tr></thead>
+              <tbody>
+                ${parsed.slice(0, 8).map((s, i) => `
+                  <tr>
+                    <td>${i+1}</td>
+                    <td>${escHtml(s.name)}</td>
+                    <td>${gradeNames[s.grade]}</td>
+                    <td>${escHtml(s.pass)}</td>
+                  </tr>`).join('')}
+                ${parsed.length > 8 ? `<tr><td colspan="4" style="text-align:center;color:#64748b">... و${parsed.length - 8} طالب آخر</td></tr>` : ''}
+              </tbody>
+            </table>
+          </div>
+          <button class="sp-excel-confirm-btn" onclick="importStudentsFromExcel()">
+            ✅ إضافة ${parsed.length} طالب الآن
+          </button>`;
+
+        // حفظ البيانات مؤقتاً للاستخدام عند الضغط
+        window._pendingExcelStudents = parsed;
+      }
+
+      previewEl.innerHTML = html;
+      previewEl.classList.remove('hidden');
+
+    } catch (err) {
+      errEl.textContent = '⚠ تعذّر قراءة الملف: ' + err.message;
+      errEl.classList.remove('hidden');
+    }
+  };
+  reader.readAsBinaryString(file);
+
+  // إعادة تعيين الـ input لقبول نفس الملف مرة أخرى
+  event.target.value = '';
+}
+
+// إضافة الطلاب بالجملة
+async function importStudentsFromExcel() {
+  const students = window._pendingExcelStudents;
+  if (!students || !students.length) return;
+
+  const btn = document.querySelector('.sp-excel-confirm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ جارٍ الإضافة...'; }
+
+  let added = 0, skipped = 0;
+  const skippedNames = [];
+
+  for (const s of students) {
+    if (!window.StudentAuth) break;
+    const res = await StudentAuth.addStudent(s.name, s.grade, s.pass);
+    if (res.ok) {
+      added++;
+    } else {
+      skipped++;
+      skippedNames.push(s.name);
+    }
+  }
+
+  window._pendingExcelStudents = null;
+
+  let msg = `✅ تمت إضافة ${added} طالب بنجاح`;
+  if (skipped) msg += ` · تم تخطي ${skipped} (مكرر أو خطأ)`;
+  showToast(msg);
+
+  if (skipped && skippedNames.length) {
+    const previewEl = document.getElementById('sp-excel-preview');
+    if (previewEl) {
+      previewEl.innerHTML = `<div class="sp-excel-summary">
+        <span class="sp-excel-count">✅ تمت إضافة ${added} طالب</span>
+        ${skipped ? `<span class="sp-excel-err-count">⚠ تم تخطي ${skipped}: ${skippedNames.join('، ')}</span>` : ''}
+      </div>`;
+    }
+  } else {
+    document.getElementById('sp-excel-preview').classList.add('hidden');
+  }
+
+  renderStudentPanel();
 }
 
 // ===================================================
