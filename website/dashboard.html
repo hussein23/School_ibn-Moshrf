@@ -23,6 +23,7 @@
       <div class="save-status" id="save-status">✅ محفوظ</div>
     </div>
     <div class="dash-header-left">
+      <button class="hbtn hbtn-ghost" onclick="resetTeacherPin()" title="تغيير رمز الدخول">🔑 رمز الدخول</button>
       <button class="hbtn hbtn-ghost" onclick="resetToDefault()" title="استعادة البيانات الأصلية">↺ استعادة</button>
       <button class="hbtn hbtn-secondary" onclick="importJSON()">📥 استيراد</button>
       <button class="hbtn hbtn-primary" onclick="exportJSON()">📤 تصدير JSON</button>
@@ -41,6 +42,7 @@
       <div class="sidebar-tree" id="sidebar-tree"></div>
       <div class="sidebar-footer">
         <button class="add-grade-btn" onclick="openAddLesson()">+ إضافة درس جديد</button>
+        <button class="add-grade-btn students-nav-btn" onclick="showStudentPanel()" style="margin-top:8px;background:#7C3AED">👥 إدارة الطلاب</button>
       </div>
     </aside>
 
@@ -72,6 +74,9 @@
 
       <!-- محرر الدرس (يظهر عند اختيار درس) -->
       <div class="lesson-editor hidden" id="lesson-editor"></div>
+
+      <!-- إدارة الطلاب (يظهر عند الضغط على "إدارة الطلاب") -->
+      <div class="lesson-editor hidden" id="student-panel"></div>
     </main>
   </div>
 
@@ -133,7 +138,33 @@
     </div>
   </div>
 
+  <!-- ===== نافذة رمز دخول المعلم ===== -->
+  <div class="pin-overlay" id="pin-overlay">
+    <div class="pin-modal">
+      <div class="pin-modal-icon">🔐</div>
+      <h2 class="pin-modal-title" id="pin-modal-title">لوحة تحكم المعلم</h2>
+      <p class="pin-modal-hint" id="pin-modal-hint">أدخل رمز الدخول للمتابعة</p>
+      <input class="pin-input" id="pin-input" type="password"
+             placeholder="رمز الدخول" maxlength="20" autocomplete="off"
+             onkeydown="if(event.key==='Enter') submitPin()">
+      <div class="pin-error hidden" id="pin-error"></div>
+      <button class="pin-submit-btn" id="pin-submit-btn" onclick="submitPin()">دخول ←</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (Compat v9) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- SheetJS لقراءة ملفات Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- إعدادات Firebase وطبقة قاعدة البيانات -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-db.js"></script>
+
   <script src="js/data.js"></script>
+  <script src="js/student-auth.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

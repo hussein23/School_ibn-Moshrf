@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المهارات الرقمية - موقع تعليمي تفاعلي</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 
@@ -50,7 +50,16 @@
   <!-- ===== تأثيرات الاحتفالات ===== -->
   <div id="celebration" class="celebration hidden"></div>
 
+  <!-- Firebase SDK (Compat v9) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- إعدادات Firebase وطبقة قاعدة البيانات -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-db.js"></script>
+
   <script src="js/data.js"></script>
+  <script src="js/student-auth.js"></script>
   <script src="js/curriculum-loader.js"></script>
   <script src="js/questions.js"></script>
   <script src="js/app.js"></script>
