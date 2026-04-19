@@ -493,72 +493,92 @@ function togglePass(id) {
 }
 
 // ===================================================
-//  محرر النصوص الغني — CKEditor 5
+//  محرر النصوص الغني — TinyMCE 6
 // ===================================================
-const _ckEditors = new Map(); // id → instance
+const _tmcEditors = new Map(); // id → instance
 
-const _CK_TOOLBAR = [
-  'heading', '|',
-  'bold', 'italic', 'underline', 'strikethrough', '|',
-  'alignment', '|',
-  'bulletedList', 'numberedList', '|',
-  'blockQuote', 'link', '|',
-  'removeFormat', '|',
-  'undo', 'redo'
-];
+const _TMC_CONFIG = {
+  base_url : 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
+  suffix   : '.min',
+  plugins  : 'lists link',
+  toolbar  : 'blocks | bold italic underline strikethrough | '
+           + 'forecolor backcolor | fontsize | '
+           + 'alignright aligncenter alignleft | '
+           + 'bullist numlist | removeformat | undo redo',
+  block_formats : 'فقرة عادية=p; عنوان كبير=h2; عنوان متوسط=h3; عنوان صغير=h4',
+  font_size_formats: '10pt 12pt 14pt 16pt 18pt 22pt 28pt 36pt',
+  color_map_foreground: [
+    '1E293B', 'أسود',   'E53935', 'أحمر',   '2196F3', 'أزرق',
+    '4CAF50', 'أخضر',   'FF9800', 'برتقالي','9C27B0', 'بنفسجي',
+    'FFFFFF', 'أبيض'
+  ],
+  directionality : 'rtl',
+  menubar        : false,
+  statusbar      : false,
+  branding       : false,
+  resize         : false,
+  promotion      : false,
+  content_style  : `
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-size: 15px; direction: rtl; text-align: right;
+      line-height: 1.8; color: #1e293b; padding: 10px 14px; margin: 0;
+    }
+    h2 { font-size: 1.4em; color: #1e293b; margin: .5em 0; }
+    h3 { font-size: 1.2em; color: #334155; margin: .4em 0; }
+    h4 { font-size: 1.05em; color: #475569; margin: .3em 0; }
+  `,
+  setup: function(editor) {
+    editor.on('init', function() {
+      // تطبيق الحد الأدنى للارتفاع من data attribute
+      const minH = parseInt(editor.getElement().dataset.minHeight) || 120;
+      editor.getContainer().style.minHeight = minH + 'px';
+      editor.getContainer().querySelector('.tox-edit-area__iframe').style.minHeight = (minH - 50) + 'px';
+    });
+  }
+};
 
-/* ينشئ div placeholder — سيتحول لمحرر CKEditor بعد رسم DOM */
+/* ينشئ textarea placeholder — سيتحول لمحرر TinyMCE بعد رسم DOM */
 function renderRichEditor(html, id, minHeight, placeholder) {
-  return `<div class="ck-editor-target" id="${id}"
-    data-min-height="${minHeight || 100}"
-    data-placeholder="${placeholder || 'اكتب هنا...'}">${html || ''}</div>`;
+  return `<textarea class="tmc-target" id="${id}"
+    data-min-height="${minHeight || 120}"
+    placeholder="${placeholder || 'اكتب هنا...'}">${html || ''}</textarea>`;
 }
 
-/* تهيئة جميع المحررات غير المهيأة في الصفحة */
-async function initCKEditors() {
-  if (typeof ClassicEditor === 'undefined') return;
-  const targets = document.querySelectorAll('.ck-editor-target:not([data-ck-ready])');
-  for (const el of targets) {
-    el.setAttribute('data-ck-ready', '1');
-    const minH = parseInt(el.dataset.minHeight) || 100;
-    try {
-      const editor = await ClassicEditor.create(el, {
-        language: { ui: 'ar', content: 'ar' },
-        toolbar:  { items: _CK_TOOLBAR, shouldNotGroupWhenFull: false },
-        placeholder: el.dataset.placeholder || 'اكتب هنا...',
-        heading: {
-          options: [
-            { model: 'paragraph',  title: 'فقرة عادية', class: 'ck-heading_paragraph' },
-            { model: 'heading2',   view: 'h2', title: 'عنوان كبير',    class: 'ck-heading_heading2' },
-            { model: 'heading3',   view: 'h3', title: 'عنوان متوسط',   class: 'ck-heading_heading3' },
-            { model: 'heading4',   view: 'h4', title: 'عنوان صغير',    class: 'ck-heading_heading4' }
-          ]
-        }
-      });
-      // تطبيق الحد الأدنى للارتفاع
-      const view = editor.editing.view.getDomRoot();
-      if (view) view.style.minHeight = minH + 'px';
-      _ckEditors.set(el.id, editor);
-    } catch (err) {
-      console.error('[CKEditor] فشل تهيئة #' + el.id, err);
-    }
+/* تهيئة جميع المحررات غير المهيأة */
+async function initTinyMCE() {
+  if (typeof tinymce === 'undefined') return;
+  const targets = document.querySelectorAll('.tmc-target:not([data-tmc-ready])');
+  if (!targets.length) return;
+  targets.forEach(el => el.setAttribute('data-tmc-ready', '1'));
+  try {
+    const instances = await tinymce.init({
+      ..._TMC_CONFIG,
+      selector: '.tmc-target[data-tmc-ready]'
+    });
+    const arr = Array.isArray(instances) ? instances : (instances ? [instances] : []);
+    arr.forEach(ed => { if (ed && ed.id) _tmcEditors.set(ed.id, ed); });
+  } catch(err) {
+    console.error('[TinyMCE] خطأ في التهيئة:', err);
   }
 }
 
 /* تدمير جميع المحررات أو تلك التي تبدأ بـ prefix */
 function destroyCKEditors(prefix) {
-  for (const [id, editor] of [..._ckEditors]) {
+  if (typeof tinymce === 'undefined') return;
+  for (const [id] of [..._tmcEditors]) {
     if (!prefix || id.startsWith(prefix)) {
-      editor.destroy().catch(() => {});
-      _ckEditors.delete(id);
+      tinymce.remove('#' + id);
+      _tmcEditors.delete(id);
     }
   }
 }
 
 /* قراءة محتوى محرر بمعرّفه */
 function getCKData(id) {
-  const ed = _ckEditors.get(id);
-  return ed ? ed.getData() : '';
+  if (typeof tinymce === 'undefined') return '';
+  const ed = tinymce.get(id);
+  return ed ? ed.getContent() : '';
 }
 
 // ===================================================
@@ -707,7 +727,7 @@ function renderLessonEditor() {
   `;
 
   // تهيئة CKEditor بعد رسم DOM
-  setTimeout(() => initCKEditors(), 0);
+  setTimeout(() => initTinyMCE(), 0);
 }
 
 function renderQuestionsList(questions) {
@@ -959,7 +979,7 @@ function _reRenderCSList() {
   if (!list) return;
   const cs = lesson.customSections || [];
   list.innerHTML = cs.map((s, i) => renderCSItem(s, i, cs.length)).join('');
-  setTimeout(() => initCKEditors(), 0);
+  setTimeout(() => initTinyMCE(), 0);
 }
 
 function _syncCSFromDOM() {

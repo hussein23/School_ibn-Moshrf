@@ -459,42 +459,45 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 .add-item-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
 /* ==============================================
-   CKEditor 5 — تخصيص المظهر
+   TinyMCE 6 — تخصيص المظهر
    ============================================== */
-.ck-editor-target { display: none; } /* يختفي قبل التهيئة */
 
-.ck.ck-editor {
+/* إخفاء الـ textarea الأصلي قبل تهيئة TinyMCE */
+textarea.tmc-target { display: none; }
+
+/* حاوية TinyMCE */
+.tox.tox-tinymce {
+  border: 2px solid var(--border) !important;
   border-radius: 12px !important;
   overflow: hidden;
-  border: 2px solid var(--border) !important;
   transition: border-color 0.2s;
+  font-family: 'Segoe UI', Tahoma, sans-serif !important;
 }
-.ck.ck-editor:focus-within { border-color: var(--primary) !important; }
+.tox.tox-tinymce:focus-within {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
 
-.ck.ck-toolbar {
+/* شريط الأدوات */
+.tox .tox-toolbar,
+.tox .tox-toolbar__overflow,
+.tox .tox-toolbar-overlord {
+  background: #F8FAFC !important;
   border-bottom: 1px solid var(--border) !important;
-  background: var(--sidebar-bg, #F8FAFC) !important;
-  border-radius: 0 !important;
-  padding: 6px 8px !important;
-  flex-wrap: wrap !important;
+  padding: 4px 6px !important;
 }
-.ck.ck-editor__editable {
-  min-height: 100px;
-  padding: 14px 16px !important;
-  font-family: 'Segoe UI', Tahoma, sans-serif;
-  font-size: 15px;
-  line-height: 1.7;
-  direction: rtl;
-  text-align: right;
-}
-.ck.ck-editor__editable:focus { box-shadow: none !important; }
+.tox .tox-toolbar__primary { background: transparent !important; }
+.tox .tox-tbtn { border-radius: 6px !important; }
+.tox .tox-tbtn:hover { background: #E2E8F0 !important; }
+.tox .tox-tbtn--enabled { background: #E2E8F0 !important; }
 
-/* تعطيل شعار CKEditor */
-.ck-powered-by { display: none !important; }
+/* إخفاء شعار TinyMCE */
+.tox .tox-statusbar__branding,
+.tox .tox-promotion { display: none !important; }
 
 /* داخل بطاقة النقاط والأقسام */
-.kp-item-card .ck.ck-editor,
-.cs-item-card .ck.ck-editor {
+.kp-item-card .tox.tox-tinymce,
+.cs-item-card .tox.tox-tinymce {
   border: none !important;
   border-radius: 0 !important;
   border-top: 1px solid var(--border) !important;
