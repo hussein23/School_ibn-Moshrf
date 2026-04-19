@@ -891,7 +891,7 @@ function addKeyPoint() {
   // التركيز يحدث تلقائياً بعد تهيئة CKEditor
   setTimeout(() => {
     const lastIdx = lesson.keyPoints.length - 1;
-    const lastEd = _ckEditors.get('kp-re-' + lastIdx);
+    const lastEd = tinymce.get('kp-re-' + lastIdx);
     if (lastEd) lastEd.editing.view.focus();
   }, 200);
 }
@@ -904,7 +904,7 @@ function moveKeyPoint(i, dir) {
   [lesson.keyPoints[i], lesson.keyPoints[j]] = [lesson.keyPoints[j], lesson.keyPoints[i]];
   renderLessonEditor();
   setTimeout(() => {
-    const targetEd = _ckEditors.get('kp-re-' + j);
+    const targetEd = tinymce.get('kp-re-' + j);
     if (targetEd) targetEd.editing.view.focus();
   }, 200);
 }
@@ -923,7 +923,7 @@ function _syncKPFromDOM() {
   const { lesson } = getLesson(activeLesson);
   const kps = [];
   let i = 0;
-  while (_ckEditors.has('kp-re-' + i)) {
+  while (!!tinymce.get('kp-re-' + i)) {
     const data = getCKData('kp-re-' + i).trim();
     if (data) kps.push(data);
     i++;
@@ -947,7 +947,7 @@ function saveLessonChanges() {
   // قراءة النقاط الرئيسية من CKEditor
   const kps = [];
   let _kpi = 0;
-  while (_ckEditors.has('kp-re-' + _kpi)) {
+  while (!!tinymce.get('kp-re-' + _kpi)) {
     const d = getCKData('kp-re-' + _kpi).trim();
     if (d) kps.push(d);
     _kpi++;
