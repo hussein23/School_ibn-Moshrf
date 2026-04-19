@@ -500,11 +500,12 @@ const _tmcEditors = new Map(); // id → instance
 const _TMC_CONFIG = {
   base_url : 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
   suffix   : '.min',
-  plugins  : 'lists link image media',
+  plugins  : 'lists link',
   toolbar  : 'blocks | bold italic underline strikethrough | '
            + 'forecolor backcolor | fontsize | '
            + 'alignright aligncenter alignleft | '
-           + 'bullist numlist | link image media | removeformat | undo redo',
+           + 'bullist numlist | tmc_imgurl tmc_imgupload tmc_video | '
+           + 'removeformat | undo redo',
   block_formats : 'فقرة عادية=p; عنوان كبير=h2; عنوان متوسط=h3; عنوان صغير=h4',
   font_size_formats: '10pt 12pt 14pt 16pt 18pt 22pt 28pt 36pt',
   color_map_foreground: [
@@ -518,56 +519,6 @@ const _TMC_CONFIG = {
   branding       : false,
   resize         : false,
   promotion      : false,
-
-  // ── إعدادات الصور ──
-  image_advtab        : true,
-  image_title         : true,
-  image_description   : false,
-  image_dimensions    : true,
-  images_upload_handler: function(blobInfo) {
-    // تحويل الصورة إلى Base64 لحفظها مع البيانات
-    return new Promise(function(resolve) {
-      const reader = new FileReader();
-      reader.onload = function() { resolve(reader.result); };
-      reader.readAsDataURL(blobInfo.blob());
-    });
-  },
-
-  // ── إعدادات الفيديو ──
-  media_live_embeds   : true,
-  media_alt_source    : false,
-  media_poster        : false,
-  media_dimensions    : true,
-  media_url_resolver  : function(data, resolve) {
-    // دعم YouTube و Google Drive و أي رابط فيديو
-    const url = data.url;
-    let embedUrl = url;
-
-    // YouTube
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?\s]+)/);
-    if (ytMatch) {
-      embedUrl = 'https://www.youtube.com/embed/' + ytMatch[1];
-      resolve({
-        html: `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">
-          <iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
-            allowfullscreen loading="lazy"></iframe></div>`
-      });
-      return;
-    }
-    // Google Drive
-    const gdMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-    if (gdMatch) {
-      embedUrl = 'https://drive.google.com/file/d/' + gdMatch[1] + '/preview';
-      resolve({
-        html: `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">
-          <iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
-            allowfullscreen></iframe></div>`
-      });
-      return;
-    }
-    resolve({ html: '' }); // اترك TinyMCE يعالج باقي الروابط
-  },
-
   content_style: `
     body {
       font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
@@ -577,12 +528,101 @@ const _TMC_CONFIG = {
     h2 { font-size: 1.4em; color: #1e293b; margin: .5em 0; }
     h3 { font-size: 1.2em; color: #334155; margin: .4em 0; }
     h4 { font-size: 1.05em; color: #475569; margin: .3em 0; }
-    img { max-width: 100%; border-radius: 8px; height: auto; }
-    iframe { max-width: 100%; border-radius: 12px; }
-    .video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; margin:12px 0; }
-    .video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
+    img { max-width:100%; border-radius:8px; height:auto; display:block; margin:8px auto; }
+    .tmc-video-wrap { position:relative; padding-bottom:56.25%; height:0;
+      overflow:hidden; border-radius:12px; margin:14px 0; background:#000; }
+    .tmc-video-wrap iframe { position:absolute; top:0; left:0;
+      width:100%; height:100%; border:none; }
   `,
   setup: function(editor) {
+
+    // ── زر: إدراج صورة عبر رابط ──
+    editor.ui.registry.addButton('tmc_imgurl', {
+      icon   : 'image',
+      tooltip: 'إدراج صورة برابط URL',
+      onAction: function() {
+        const url = prompt('🖼 أدخل رابط الصورة (URL):');
+        if (!url || !url.trim()) return;
+        editor.insertContent(
+          `<img src="${url.trim()}" alt="صورة" style="max-width:100%;border-radius:8px;">`
+        );
+      }
+    });
+
+    // ── زر: رفع صورة من الجهاز ──
+    editor.ui.registry.addButton('tmc_imgupload', {
+      icon   : 'upload',
+      tooltip: 'رفع صورة من جهازك',
+      onAction: function() {
+        const inp = document.createElement('input');
+        inp.type   = 'file';
+        inp.accept = 'image/*';
+        inp.onchange = function() {
+          const file = inp.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            editor.insertContent(
+              `<img src="${e.target.result}" alt="${file.name}"
+               style="max-width:100%;border-radius:8px;">`
+            );
+          };
+          reader.readAsDataURL(file);
+        };
+        inp.click();
+      }
+    });
+
+    // ── زر: إدراج فيديو (YouTube / Google Drive / رابط mp4) ──
+    editor.ui.registry.addButton('tmc_video', {
+      icon   : 'embed',
+      tooltip: 'إدراج فيديو (YouTube أو Google Drive)',
+      onAction: function() {
+        const url = prompt(
+          '▶ أدخل رابط الفيديو:\n• YouTube: https://youtube.com/watch?v=...\n• Google Drive: https://drive.google.com/file/d/...\n• رابط mp4 مباشر'
+        );
+        if (!url || !url.trim()) return;
+        const u = url.trim();
+
+        // YouTube
+        const yt = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?\s/]+)/);
+        if (yt) {
+          editor.insertContent(
+            `<div class="tmc-video-wrap">
+               <iframe src="https://www.youtube.com/embed/${yt[1]}?rel=0"
+                 allowfullscreen loading="lazy"></iframe>
+             </div><p></p>`
+          );
+          return;
+        }
+
+        // Google Drive
+        const gd = u.match(/drive\.google\.com\/file\/d\/([^/?#\s]+)/);
+        if (gd) {
+          editor.insertContent(
+            `<div class="tmc-video-wrap">
+               <iframe src="https://drive.google.com/file/d/${gd[1]}/preview"
+                 allowfullscreen></iframe>
+             </div><p></p>`
+          );
+          return;
+        }
+
+        // رابط mp4 / webm مباشر
+        if (/\.(mp4|webm|ogg)(\?|$)/i.test(u)) {
+          editor.insertContent(
+            `<video controls style="max-width:100%;border-radius:12px;margin:12px 0">
+               <source src="${u}">
+             </video><p></p>`
+          );
+          return;
+        }
+
+        alert('⚠ الرابط غير مدعوم.\nاستخدم رابط YouTube أو Google Drive أو ملف mp4 مباشر.');
+      }
+    });
+
+    // ── ارتفاع المحرر ──
     editor.on('init', function() {
       const minH = parseInt(editor.getElement().dataset.minHeight) || 120;
       editor.getContainer().style.minHeight = minH + 'px';
