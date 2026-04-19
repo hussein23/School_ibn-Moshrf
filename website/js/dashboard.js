@@ -495,154 +495,95 @@ function togglePass(id) {
 // ===================================================
 //  محرر النصوص الغني (Rich Text Editor)
 // ===================================================
-//  TinyMCE 6 — إعداد وتهيئة المحرر
-// ===================================================
+let _reActive = null; // العنصر contenteditable النشط حالياً
 
-const _TMC_CFG = {
-  language: 'ar',
-  directionality: 'rtl',
-  plugins: 'lists link autolink image media table code emoticons fullscreen searchreplace',
-  toolbar:
-    'undo redo | blocks | bold italic underline strikethrough | ' +
-    'forecolor backcolor | alignright aligncenter alignleft | ' +
-    'bullist numlist | link tmc_imgurl tmc_imgupload tmc_video | ' +
-    'emoticons table searchreplace | code fullscreen',
-  menubar: false,
-  branding: false,
-  promotion: false,
-  statusbar: false,
-  resize: 'vertical',
-  content_style:
-    'body { font-family: Tajawal, Arial, sans-serif; font-size: 15px; ' +
-    'direction: rtl; text-align: right; line-height: 1.8; }',
-  setup: function(editor) {
+function setActiveRE(el) { _reActive = el; }
 
-    /* ── زر: إدراج صورة برابط URL ── */
-    editor.ui.registry.addButton('tmc_imgurl', {
-      icon: 'image',
-      tooltip: 'إدراج صورة برابط URL',
-      onAction: function() {
-        const url = prompt('أدخل رابط الصورة (URL):');
-        if (url && url.trim()) {
-          editor.insertContent(
-            `<img src="${url.trim()}" style="max-width:100%;border-radius:8px;margin:8px 0;" />`
-          );
-        }
-      }
-    });
-
-    /* ── زر: رفع صورة من الجهاز ── */
-    editor.ui.registry.addButton('tmc_imgupload', {
-      icon: 'upload',
-      tooltip: 'رفع صورة من الجهاز',
-      onAction: function() {
-        const inp = document.createElement('input');
-        inp.type = 'file';
-        inp.accept = 'image/*';
-        inp.onchange = function() {
-          const file = inp.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            editor.insertContent(
-              `<img src="${e.target.result}" style="max-width:100%;border-radius:8px;margin:8px 0;" />`
-            );
-          };
-          reader.readAsDataURL(file);
-        };
-        inp.click();
-      }
-    });
-
-    /* ── زر: إدراج فيديو (YouTube / Google Drive / mp4) ── */
-    editor.ui.registry.addButton('tmc_video', {
-      icon: 'embed',
-      tooltip: 'إدراج فيديو (YouTube / Google Drive / mp4)',
-      onAction: function() {
-        const url = prompt('أدخل رابط الفيديو (YouTube أو Google Drive أو رابط mp4):');
-        if (!url || !url.trim()) return;
-        const u = url.trim();
-        let html = '';
-        const yt = u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
-        const gd = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-        if (yt) {
-          html = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">` +
-            `<iframe src="https://www.youtube.com/embed/${yt[1]}" ` +
-            `style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe></div>`;
-        } else if (gd) {
-          html = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">` +
-            `<iframe src="https://drive.google.com/file/d/${gd[1]}/preview" ` +
-            `style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>`;
-        } else if (/\.mp4/i.test(u)) {
-          html = `<video controls style="max-width:100%;border-radius:12px;margin:12px 0">` +
-            `<source src="${u}" type="video/mp4"></video>`;
-        } else {
-          html = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">` +
-            `<iframe src="${u}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>`;
-        }
-        editor.insertContent(html);
-      }
-    });
-  }
-};
-
-/* قراءة محتوى محرر بـ ID */
-function getCKData(id) {
-  if (typeof tinymce === 'undefined') return '';
-  const ed = tinymce.get(id);
-  if (ed) return ed.getContent();
-  // fallback: قيمة الـ textarea مباشرة
-  return (document.getElementById(id) || {}).value || '';
+function execRich(cmd, val) {
+  if (_reActive) _reActive.focus();
+  document.execCommand(cmd, false, val || null);
+  if (_reActive) _reActive.focus();
 }
 
-/* تدمير نسخ TinyMCE التي تبدأ بـ prefix */
-function _destroyTMC(prefix) {
-  if (typeof tinymce === 'undefined') return;
-  tinymce.editors
-    .filter(e => prefix ? e.id.startsWith(prefix) : true)
-    .forEach(e => { try { e.remove(); } catch(_) {} });
+function execRichColor(inputEl, cmd) {
+  // حفظ التحديد قبل فتح color picker
+  if (_reActive) _reActive.focus();
+  inputEl.addEventListener('change', function onchange() {
+    if (_reActive) _reActive.focus();
+    document.execCommand(cmd, false, this.value);
+    inputEl.removeEventListener('change', onchange);
+  }, { once: true });
 }
 
-/* تدمير كل محررات الدرس */
-function _destroyAllEditorTMC() {
-  _destroyTMC('f-summary');
-  _destroyTMC('kp-re-');
-  _destroyTMC('cs-re-');
-}
-
-/* تهيئة TinyMCE على كل .tmc-target داخل container */
-async function initTinyMCE(container) {
-  if (typeof tinymce === 'undefined') {
-    console.warn('[TMC] TinyMCE غير محمّل');
-    return;
-  }
-  const root = container || document;
-  const targets = root.querySelectorAll('.tmc-target');
-  if (!targets.length) return;
-
-  for (const ta of targets) {
-    const id = ta.id;
-    if (!id) continue;
-    if (tinymce.get(id)) { try { tinymce.get(id).remove(); } catch(_) {} }
-    const minH = parseInt(ta.dataset.minHeight) || 80;
-    await tinymce.init({
-      ..._TMC_CFG,
-      selector: '#' + id,
-      min_height: minH + 80,
-      base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
-      suffix: '.min'
-    });
-  }
-}
-
-/* بناء HTML حاوية المحرر */
-function renderRichEditor(html, id, minHeight, placeholder) {
-  // نُخزّن HTML في value حتى يلتقطه TinyMCE عند التهيئة
-  const safe = (html || '').replace(/</g, '\x3C'); // لا نعقّده — TinyMCE يقرأه كـ HTML
-  return `<div class="tmc-wrap">
-    <textarea class="tmc-target" id="${id}"
-              data-min-height="${minHeight || 80}">${html || ''}</textarea>
+/* الشريط المشترك — يُعرض داخل كل بطاقة */
+function richToolbar(scope) {
+  return `
+  <div class="re-toolbar" onmousedown="event.preventDefault()">
+    <div class="rtb-group">
+      <button class="rtb-btn" title="عريض (Ctrl+B)"
+              onclick="execRich('bold')"><b>B</b></button>
+      <button class="rtb-btn" title="مائل (Ctrl+I)"
+              onclick="execRich('italic')"><i>I</i></button>
+      <button class="rtb-btn" title="خط تحتي (Ctrl+U)"
+              onclick="execRich('underline')"><u>U</u></button>
+      <button class="rtb-btn" title="يتوسطه خط"
+              onclick="execRich('strikeThrough')"><s>S</s></button>
+    </div>
+    <div class="rtb-group">
+      <label class="rtb-color-btn" title="لون النص" onmousedown="event.stopPropagation()">
+        <span class="rtb-color-label rtb-text-color">A</span>
+        <input type="color" value="#e53935"
+               onchange="if(_reActive)_reActive.focus();document.execCommand('foreColor',false,this.value)">
+      </label>
+      <label class="rtb-color-btn" title="تظليل" onmousedown="event.stopPropagation()">
+        <span class="rtb-color-label rtb-hl-color">🖍</span>
+        <input type="color" value="#fff176"
+               onchange="if(_reActive)_reActive.focus();document.execCommand('hiliteColor',false,this.value)">
+      </label>
+    </div>
+    <div class="rtb-group">
+      <select class="rtb-select" title="حجم الخط"
+              onmousedown="event.stopPropagation()"
+              onchange="if(_reActive)_reActive.focus();document.execCommand('fontSize',false,this.value)">
+        <option value="1">XS</option>
+        <option value="2">S</option>
+        <option value="3" selected>M</option>
+        <option value="4">L</option>
+        <option value="5">XL</option>
+        <option value="6">XXL</option>
+      </select>
+    </div>
+    <div class="rtb-group">
+      <button class="rtb-btn" title="محاذاة يمين"
+              onclick="execRich('justifyRight')">⇤</button>
+      <button class="rtb-btn" title="توسيط"
+              onclick="execRich('justifyCenter')">≡</button>
+      <button class="rtb-btn" title="محاذاة يسار"
+              onclick="execRich('justifyLeft')">⇥</button>
+    </div>
+    <div class="rtb-group">
+      <button class="rtb-btn" title="قائمة نقطية"
+              onclick="execRich('insertUnorderedList')">• ≡</button>
+      <button class="rtb-btn" title="قائمة مرقمة"
+              onclick="execRich('insertOrderedList')">1 ≡</button>
+    </div>
+    <div class="rtb-group">
+      <button class="rtb-btn rtb-btn-danger" title="مسح التنسيق"
+              onclick="execRich('removeFormat')">✕</button>
+    </div>
   </div>`;
+}
+
+function renderRichEditor(html, id, minHeight, placeholder) {
+  return `
+    <div class="re-wrap">
+      ${richToolbar(id)}
+      <div class="re-content" id="${id}" contenteditable="true"
+           style="min-height:${minHeight || 80}px"
+           placeholder="${placeholder || 'اكتب هنا...'}"
+           onfocus="setActiveRE(this)"
+           onmousedown="setActiveRE(this)">${html || ''}</div>
+    </div>`;
 }
 
 // ===================================================
@@ -683,9 +624,6 @@ function getLesson(al) {
 function renderLessonEditor() {
   const { grade, sem, unit, lesson } = getLesson(activeLesson);
   const editor = document.getElementById('lesson-editor');
-
-  // تدمير نسخ TinyMCE القديمة أولاً
-  _destroyAllEditorTMC();
 
   document.getElementById('overview-panel').classList.add('hidden');
   editor.classList.remove('hidden');
@@ -791,9 +729,6 @@ function renderLessonEditor() {
       <button class="save-lesson-btn" onclick="saveLessonChanges()">💾 حفظ التعديلات</button>
     </div>
   `;
-
-  // تهيئة TinyMCE بعد رسم الـ DOM
-  setTimeout(() => initTinyMCE(editor), 50);
 }
 
 function renderQuestionsList(questions) {
@@ -856,16 +791,18 @@ function deleteKeyPoint(i) {
 }
 
 function addKeyPoint() {
+  // حفظ HTML الحالي أولاً
   _syncKPFromDOM();
   const { lesson } = getLesson(activeLesson);
   lesson.keyPoints.push('');
   renderLessonEditor();
-  // التركيز على آخر محرر بعد تهيئة TinyMCE
-  setTimeout(() => {
-    const lastIdx = lesson.keyPoints.length - 1;
-    const ed = typeof tinymce !== 'undefined' ? tinymce.get('kp-re-' + lastIdx) : null;
-    if (ed) ed.focus();
-  }, 400);
+  // تركيز على آخر محرر
+  const editors = document.querySelectorAll('#keypoints-list .re-content');
+  if (editors.length) {
+    const last = editors[editors.length - 1];
+    last.focus();
+    setActiveRE(last);
+  }
 }
 
 function moveKeyPoint(i, dir) {
@@ -875,10 +812,9 @@ function moveKeyPoint(i, dir) {
   if (j < 0 || j >= lesson.keyPoints.length) return;
   [lesson.keyPoints[i], lesson.keyPoints[j]] = [lesson.keyPoints[j], lesson.keyPoints[i]];
   renderLessonEditor();
-  setTimeout(() => {
-    const ed = typeof tinymce !== 'undefined' ? tinymce.get('kp-re-' + j) : null;
-    if (ed) ed.focus();
-  }, 400);
+  // إعادة التركيز على النقطة المنقولة
+  const targetEditor = document.getElementById(`kp-re-${j}`);
+  if (targetEditor) { targetEditor.focus(); setActiveRE(targetEditor); }
 }
 
 function setKpLayout(layout) {
@@ -889,18 +825,14 @@ function setKpLayout(layout) {
   renderLessonEditor();
 }
 
-/* مزامنة محتوى النقاط من TinyMCE إلى lesson object */
+/* مزامنة محتوى النقاط من DOM إلى lesson object */
 function _syncKPFromDOM() {
   if (!activeLesson) return;
   const { lesson } = getLesson(activeLesson);
-  const kps = [];
-  let i = 0;
-  while (typeof tinymce !== 'undefined' && tinymce.get('kp-re-' + i)) {
-    const data = getCKData('kp-re-' + i).trim();
-    if (data) kps.push(data);
-    i++;
+  const editors = document.querySelectorAll('#keypoints-list .re-content');
+  if (editors.length) {
+    lesson.keyPoints = [...editors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
   }
-  if (i > 0) lesson.keyPoints = kps;
 }
 
 function saveLessonChanges() {
@@ -909,24 +841,19 @@ function saveLessonChanges() {
   // اسم الدرس
   lesson.name = document.getElementById('f-name').value.trim();
 
-  // الملخص من TinyMCE
-  lesson.summary = getCKData('f-summary');
+  // الملخص من المحرر الغني
+  const summaryEl = document.getElementById('f-summary');
+  if (summaryEl) lesson.summary = summaryEl.innerHTML.trim();
 
-  // قراءة الأهداف من DOM
+  // قراءة الأهداف من DOM مباشرة
   const objTextareas = document.querySelectorAll('#objectives-list textarea');
   lesson.objectives = [...objTextareas].map(t => t.value.trim()).filter(v => v);
 
-  // قراءة النقاط الرئيسية من TinyMCE
-  const kps = [];
-  let _kpi = 0;
-  while (typeof tinymce !== 'undefined' && tinymce.get('kp-re-' + _kpi)) {
-    const d = getCKData('kp-re-' + _kpi).trim();
-    if (d) kps.push(d);
-    _kpi++;
-  }
-  lesson.keyPoints = kps;
+  // قراءة النقاط الرئيسية من المحررات الغنية
+  const kpEditors = document.querySelectorAll('#keypoints-list .re-content');
+  lesson.keyPoints = [...kpEditors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
 
-  // قراءة الأقسام المخصصة
+  // قراءة الأقسام المخصصة من DOM
   _syncCSFromDOM();
 
   saveCurriculum();
@@ -1041,12 +968,8 @@ function _reRenderCSList() {
   const { lesson } = getLesson(activeLesson);
   const list = document.getElementById('custom-sections-list');
   if (!list) return;
-  // تدمير محررات الأقسام القديمة
-  _destroyTMC('cs-re-');
   const cs = lesson.customSections || [];
   list.innerHTML = cs.map((s, i) => renderCSItem(s, i, cs.length)).join('');
-  // تهيئة TinyMCE على الأقسام الجديدة فقط
-  setTimeout(() => initTinyMCE(list), 50);
 }
 
 function _syncCSFromDOM() {
@@ -1057,7 +980,7 @@ function _syncCSFromDOM() {
   lesson.customSections = [...cards].map((card, i) => {
     const icon    = card.querySelector(`#cs-icon-${i}`)?.value || '📌';
     const title   = card.querySelector(`#cs-title-${i}`)?.value || '';
-    const content = getCKData('cs-re-' + i); // قراءة من TinyMCE
+    const content = card.querySelector('.re-content')?.innerHTML.trim() || '';
     const prev    = (lesson.customSections || [])[i] || {};
     return { id: prev.id || 'cs_' + Date.now(), icon, title, content };
   });
