@@ -1,18 +1,15 @@
 // ===================================================
-//  محمّل البيانات - يُطبّق تعديلات المنهج
-//  الأولوية: Firebase → localStorage → data.js الأصلي
+//  محمّل بيانات المنهج
+//  الأولوية: localStorage (فوري) ثم Firebase (دقيق)
 // ===================================================
 
 (function () {
   const STORAGE_KEY = 'ibn_moshrf_curriculum';
 
-  // ── تطبيق بيانات المنهج على CURRICULUM ──
   function applyCurriculum(data) {
     if (!data || typeof data !== 'object') return false;
     try {
-      // استبدل محتوى CURRICULUM بالبيانات الجديدة
       Object.keys(data).forEach(function(key) { CURRICULUM[key] = data[key]; });
-      // احذف أي صفوف حُذفت من اللوحة
       Object.keys(CURRICULUM).forEach(function(key) {
         if (!data[key]) delete CURRICULUM[key];
       });
@@ -23,19 +20,19 @@
     }
   }
 
-  // ── الخطوة 1: تطبيق localStorage فوراً (عرض سريع) ──
+  // ── الخطوة 1: تطبيق localStorage فوراً لعرض سريع ──
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) applyCurriculum(JSON.parse(saved));
   } catch(e) {}
 
-  // ── الخطوة 2: عند وصول تحديث من Firebase (من جهاز آخر) ──
-  // هذه الدالة تُستدعى من firebase-db.js عند كل تحديث خارجي
+  // ── الخطوة 2: عند وصول تحديث من Firebase ──
+  // هذه الدالة تُستدعى من firebase-db.js عند كل تغيير يُرفعه المعلم
   window._onCurriculumUpdate = function(data) {
     if (!applyCurriculum(data)) return;
 
     // لا تُعد الرسم إذا كانت نافذة الدرس مفتوحة
-    const modal = document.getElementById('lesson-modal');
+    var modal = document.getElementById('lesson-modal');
     if (modal && !modal.classList.contains('hidden')) return;
 
     // أعد رسم العرض الحالي

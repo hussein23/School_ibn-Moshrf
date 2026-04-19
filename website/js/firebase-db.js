@@ -12,9 +12,6 @@
   let _useFirebase = false;
 
   // ── بيانات المناهج ──
-  let _curriculumCache = null;   // نسخة الذاكرة من المنهج
-  let _curriculumReady = false;
-  let _curriculumQueue = [];
   let _ignoreNextCurriculumUpdate = false; // لتجنب حلقة عند الحفظ
 
   // ──────────────────────────────
@@ -23,7 +20,6 @@
   function _init() {
     const cfg = window.FIREBASE_CONFIG;
 
-    // إذا لم يكن هناك إعدادات Firebase → استخدم localStorage كاحتياط
     if (!cfg || !window.firebase ||
         cfg.apiKey === 'PASTE_YOUR_API_KEY_HERE' ||
         !cfg.databaseURL) {
@@ -34,7 +30,6 @@
     }
 
     try {
-      // تهيئة تطبيق Firebase (مرة واحدة فقط)
       if (!firebase.apps || !firebase.apps.length) {
         firebase.initializeApp(cfg);
       }
@@ -45,58 +40,41 @@
       const studentsRef = firebase.database().ref('ibn_moshrf_students');
       studentsRef.on('value', function (snapshot) {
         _cache = snapshot.val() || {};
-
-        if (!_ready) {
-          _ready = true;
-          _flush();
-        }
-
-        // تحديث الواجهة عند وصول بيانات جديدة
+        if (!_ready) { _ready = true; _flush(); }
         if (window.StudentAuth) {
           window.StudentAuth.updateStudentBar();
           if (window._refreshLeaderboard) window._refreshLeaderboard();
         }
       }, function (err) {
-        console.error('[FirebaseDB] خطأ في القراءة:', err);
-        try {
-          _cache = JSON.parse(localStorage.getItem('ibn_moshrf_students')) || {};
-        } catch(_) { _cache = {}; }
+        console.error('[FirebaseDB] خطأ في قراءة الطلاب:', err);
+        try { _cache = JSON.parse(localStorage.getItem('ibn_moshrf_students')) || {}; } catch(_) { _cache = {}; }
         _ready = true;
         _flush();
       });
 
-      // ── مستمع بيانات المنهج ──
-      const curriculumRef = firebase.database().ref('ibn_moshrf_curriculum');
+      // ── مستمع بيانات المنهج (مخزّن كـ JSON string لتجنب تحويل المصفوفات) ──
+      const curriculumRef = firebase.database().ref('ibn_moshrf_curriculum_v2');
       curriculumRef.on('value', function (snapshot) {
-        const val = snapshot.val();
+        const jsonStr = snapshot.val();
 
-        if (!_curriculumReady) {
-          // أول قراءة: خزّن البيانات وأطلق الصف المنتظِر
-          if (val) _curriculumCache = val;
-          _curriculumReady = true;
-          _curriculumQueue.forEach(fn => fn());
-          _curriculumQueue = [];
-          return;
-        }
-
-        // تحديث لاحق: جاء من جهاز آخر (مثلاً المعلم حفظ تعديلاً)
         if (_ignoreNextCurriculumUpdate) {
           _ignoreNextCurriculumUpdate = false;
           return;
         }
 
-        if (val) {
-          _curriculumCache = val;
-          // خزّن في localStorage حتى يعمل بدون إنترنت
-          try { localStorage.setItem('ibn_moshrf_curriculum', JSON.stringify(val)); } catch(e) {}
-          // أخبر curriculum-loader بالتحديث
-          if (window._onCurriculumUpdate) window._onCurriculumUpdate(val);
+        if (jsonStr) {
+          try {
+            const data = JSON.parse(jsonStr);
+            // حفظ محلي للعمل بدون إنترنت
+            try { localStorage.setItem('ibn_moshrf_curriculum', jsonStr); } catch(e) {}
+            // إبلاغ curriculum-loader بالتحديث الجديد
+            if (window._onCurriculumUpdate) window._onCurriculumUpdate(data);
+          } catch(e) {
+            console.error('[FirebaseDB] خطأ في تحليل المنهج:', e);
+          }
         }
       }, function (err) {
         console.error('[FirebaseDB] خطأ في قراءة المنهج:', err);
-        _curriculumReady = true;
-        _curriculumQueue.forEach(fn => fn());
-        _curriculumQueue = [];
       });
 
     } catch (err) {
@@ -106,56 +84,41 @@
     }
   }
 
-  // تشغيل الوظائف المنتظِرة
   function _flush() {
     _queue.forEach(fn => fn());
     _queue = [];
   }
 
   // ──────────────────────────────
-  //  API عامة
+  //  API الطلاب
   // ──────────────────────────────
-
-  // انتظر حتى تجهز قاعدة البيانات ثم نفّذ fn
   function onReady(fn) {
     if (_ready) fn();
     else _queue.push(fn);
   }
 
-  // اقرأ البيانات (متزامن من الذاكرة)
-  function dbLoad() {
-    return _cache;
-  }
+  function dbLoad() { return _cache; }
 
-  // احفظ البيانات (في الذاكرة + Firebase/localStorage)
   function dbSave(data) {
     _cache = data;
-
     if (_useFirebase) {
       firebase.database().ref('ibn_moshrf_students').set(data)
         .catch(err => console.error('[FirebaseDB] خطأ في الحفظ:', err));
     } else {
-      // احتياط: localStorage
-      try {
-        localStorage.setItem('ibn_moshrf_students', JSON.stringify(data));
-      } catch(e) {}
+      try { localStorage.setItem('ibn_moshrf_students', JSON.stringify(data)); } catch(e) {}
     }
   }
 
-  // حذف طالب واحد بكفاءة (بدلاً من تحديث الكل)
   function dbDeleteStudent(id) {
     delete _cache[id];
     if (_useFirebase) {
       firebase.database().ref('ibn_moshrf_students/' + id).remove()
         .catch(err => console.error('[FirebaseDB] خطأ في الحذف:', err));
     } else {
-      try {
-        localStorage.setItem('ibn_moshrf_students', JSON.stringify(_cache));
-      } catch(e) {}
+      try { localStorage.setItem('ibn_moshrf_students', JSON.stringify(_cache)); } catch(e) {}
     }
   }
 
-  // تحديث حقول محددة لطالب (بكفاءة)
   function dbUpdateStudent(id, fields) {
     if (!_cache[id]) return;
     Object.assign(_cache[id], fields);
@@ -163,36 +126,23 @@
       firebase.database().ref('ibn_moshrf_students/' + id).update(fields)
         .catch(err => console.error('[FirebaseDB] خطأ في التحديث:', err));
     } else {
-      try {
-        localStorage.setItem('ibn_moshrf_students', JSON.stringify(_cache));
-      } catch(e) {}
+      try { localStorage.setItem('ibn_moshrf_students', JSON.stringify(_cache)); } catch(e) {}
     }
   }
 
-  // هل يعمل مع Firebase؟
   function isFirebaseActive() { return _useFirebase; }
 
   // ──────────────────────────────
   //  API المنهج
   // ──────────────────────────────
-
-  function onCurriculumReady(fn) {
-    if (_curriculumReady) fn();
-    else _curriculumQueue.push(fn);
-  }
-
-  function dbLoadCurriculum() {
-    return _curriculumCache;
-  }
-
   function dbSaveCurriculum(data) {
-    _curriculumCache = data;
-    // حفظ محلي فوري
-    try { localStorage.setItem('ibn_moshrf_curriculum', JSON.stringify(data)); } catch(e) {}
+    // نخزّن كـ JSON string لأن Firebase يحوّل المصفوفات إلى objects
+    const jsonStr = JSON.stringify(data);
+    try { localStorage.setItem('ibn_moshrf_curriculum', jsonStr); } catch(e) {}
 
     if (_useFirebase) {
-      _ignoreNextCurriculumUpdate = true; // تجنب إعادة الرسم على نفس الجهاز
-      firebase.database().ref('ibn_moshrf_curriculum').set(data)
+      _ignoreNextCurriculumUpdate = true;
+      firebase.database().ref('ibn_moshrf_curriculum_v2').set(jsonStr)
         .catch(function(err) {
           console.error('[FirebaseDB] خطأ في حفظ المنهج:', err);
           _ignoreNextCurriculumUpdate = false;
@@ -210,12 +160,9 @@
     dbDeleteStudent,
     dbUpdateStudent,
     isFirebaseActive,
-    onCurriculumReady,
-    dbLoadCurriculum,
     dbSaveCurriculum
   };
 
-  // ابدأ التهيئة
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _init);
   } else {
