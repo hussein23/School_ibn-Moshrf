@@ -122,7 +122,16 @@ function loadCurriculum() {
 
 function saveCurriculum() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(curriculum));
-  setSaveStatus('✅ تم الحفظ');
+
+  // حفظ في Firebase ليظهر التعديل لجميع المستخدمين فوراً
+  if (window.FirebaseDB && window.FirebaseDB.dbSaveCurriculum) {
+    window.FirebaseDB.dbSaveCurriculum(curriculum);
+    setSaveStatus('☁️ يتم الحفظ…');
+    setTimeout(() => setSaveStatus('✅ محفوظ للجميع'), 1200);
+  } else {
+    setSaveStatus('✅ تم الحفظ');
+  }
+
   showToast('✅ تم الحفظ بنجاح');
 }
 

@@ -263,6 +263,24 @@ function updateBreadcrumb(items) {
   ).join('<span class="bc-sep">›</span>');
 }
 
+// ===== إعادة رسم العرض الحالي (تُستدعى عند وصول تحديث من Firebase) =====
+window._rerenderCurrentView = function () {
+  // لا تُعد الرسم إذا كانت نافذة الدرس مفتوحة
+  const modal = document.getElementById('lesson-modal');
+  if (modal && !modal.classList.contains('hidden')) return;
+
+  const s = currentState;
+  if (s.unit) {
+    return; // صفحة unit.html المستقلة لا تحتاج إعادة رسم
+  } else if (s.semester) {
+    _renderSemester(s.grade.id, s.semester.id);
+  } else if (s.grade) {
+    _renderGrade(s.grade.id);
+  } else {
+    _renderHome();
+  }
+};
+
 // ===== تهيئة الموقع =====
 document.addEventListener('DOMContentLoaded', () => {
   const initGrade = document.body.dataset.initGrade;
