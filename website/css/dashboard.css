@@ -459,114 +459,47 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 .add-item-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
 /* ==============================================
-   محرر النصوص الغني — Rich Text Editor
+   TinyMCE — تنسيقات المحرر
    ============================================== */
-.re-wrap {
-  border: 2px solid var(--border);
-  border-radius: 12px;
+
+/* إخفاء الـ textarea الأصلية (TinyMCE يستبدلها) */
+.tmc-target { display: none; }
+
+/* حاوية المحرر */
+.tmc-wrap {
+  border-radius: 10px;
   overflow: hidden;
+}
+
+/* إطار TinyMCE الرئيسي */
+.tox.tox-tinymce {
+  border: 2px solid var(--border) !important;
+  border-radius: 10px !important;
   transition: border-color 0.2s;
 }
-.re-wrap:focus-within { border-color: var(--primary); }
+.tox.tox-tinymce:focus-within {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
 
 /* شريط الأدوات */
-.re-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 2px;
-  padding: 6px 10px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-}
-.rtb-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding-left: 8px;
-  margin-left: 4px;
-  border-left: 1px solid var(--border);
-}
-.rtb-group:first-child { border-left: none; margin-left: 0; }
+.tox .tox-toolbar,
+.tox .tox-toolbar__overflow,
+.tox .tox-toolbar-overlord { background: var(--bg) !important; }
 
-.rtb-btn {
-  min-width: 28px; height: 28px;
-  padding: 0 4px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-  font-family: 'Cairo', sans-serif;
-  font-size: 13px;
-  color: var(--text-dark);
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.rtb-btn:hover { background: var(--white); border-color: var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-.rtb-btn-danger:hover { background: #FFF1F2 !important; color: var(--danger) !important; }
+/* إخفاء شعار TinyMCE */
+.tox-statusbar__branding,
+.tox-statusbar__path,
+.tox .tox-statusbar { display: none !important; }
 
-/* منتقي اللون */
-.rtb-color-btn {
-  position: relative;
-  width: 28px; height: 28px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--white);
-  overflow: hidden;
-  transition: all 0.15s;
-}
-.rtb-color-btn:hover { border-color: var(--primary); }
-.rtb-color-label {
-  font-size: 13px; font-weight: 900;
-  pointer-events: none;
-  position: relative; z-index: 1;
-}
-.rtb-text-color { color: #e53935; }
-.rtb-hl-color   { font-size: 11px; }
-.rtb-color-btn input[type=color] {
-  position: absolute;
-  opacity: 0;
-  width: 100%; height: 100%;
-  top: 0; left: 0;
-  cursor: pointer;
-  border: none;
-  padding: 0;
-}
-
-/* قائمة الحجم */
-.rtb-select {
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-family: 'Cairo', sans-serif;
-  font-size: 11px;
-  background: var(--white);
-  color: var(--text-dark);
-  cursor: pointer;
-  outline: none;
-}
-.rtb-select:focus { border-color: var(--primary); }
-
-/* منطقة التحرير */
-.re-content {
-  padding: 12px 16px;
-  background: var(--white);
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  line-height: 1.9;
-  outline: none;
-  direction: rtl;
-  color: var(--text-dark);
-  word-break: break-word;
-}
-.re-content:focus { background: #FAFEFF; }
-.re-content:empty::before {
-  content: attr(placeholder);
-  color: var(--text-light);
-  pointer-events: none;
+/* داخل بطاقات النقاط والأقسام */
+.kp-item-card .tmc-wrap,
+.cs-item-card .tmc-wrap { border-radius: 0; }
+.kp-item-card .tox.tox-tinymce,
+.cs-item-card .tox.tox-tinymce {
+  border: none !important;
+  border-top: 1px solid var(--border) !important;
+  border-radius: 0 !important;
 }
 
 /* ==============================================
@@ -625,9 +558,8 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 }
 .kp-del-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
 
-/* داخل بطاقة النقطة: لا حاجة لحدود مضاعفة */
-.kp-item-card .re-wrap { border: none; border-radius: 0; }
-.kp-item-card .re-toolbar { border-bottom: 1px solid var(--border); }
+/* داخل بطاقة النقطة: TinyMCE بلا حدود مضاعفة */
+.kp-item-card .tox.tox-tinymce { border-left: none !important; border-right: none !important; border-bottom: none !important; }
 
 /* قسم الأسئلة */
 .questions-header {
@@ -1130,8 +1062,7 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 }
 .cs-item-actions { display: flex; gap: 4px; }
 /* داخل بطاقة القسم: لا حدود مضاعفة */
-.cs-item-card .re-wrap { border: none; border-radius: 0; }
-.cs-item-card .re-toolbar { border-bottom: 1px solid var(--border); }
+.cs-item-card .tox.tox-tinymce { border-left: none !important; border-right: none !important; border-bottom: none !important; }
 
 /* ===================================================
    إدارة الطلاب - Student Panel
