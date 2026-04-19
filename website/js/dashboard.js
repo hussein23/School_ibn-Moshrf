@@ -493,186 +493,97 @@ function togglePass(id) {
 }
 
 // ===================================================
-//  محرر النصوص الغني — TinyMCE 6
+//  محرر النصوص الغني (Rich Text Editor)
 // ===================================================
-const _tmcEditors = new Map(); // id → instance
+let _reActive = null; // العنصر contenteditable النشط حالياً
 
-const _TMC_CONFIG = {
-  base_url : 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
-  suffix   : '.min',
-  plugins  : 'lists link',
-  toolbar  : 'blocks | bold italic underline strikethrough | '
-           + 'forecolor backcolor | fontsize | '
-           + 'alignright aligncenter alignleft | '
-           + 'bullist numlist | tmc_imgurl tmc_imgupload tmc_video | '
-           + 'removeformat | undo redo',
-  block_formats : 'فقرة عادية=p; عنوان كبير=h2; عنوان متوسط=h3; عنوان صغير=h4',
-  font_size_formats: '10pt 12pt 14pt 16pt 18pt 22pt 28pt 36pt',
-  color_map_foreground: [
-    '1E293B', 'أسود',   'E53935', 'أحمر',   '2196F3', 'أزرق',
-    '4CAF50', 'أخضر',   'FF9800', 'برتقالي','9C27B0', 'بنفسجي',
-    'FFFFFF', 'أبيض'
-  ],
-  directionality : 'rtl',
-  menubar        : false,
-  statusbar      : false,
-  branding       : false,
-  resize         : false,
-  promotion      : false,
-  content_style: `
-    body {
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-      font-size: 15px; direction: rtl; text-align: right;
-      line-height: 1.8; color: #1e293b; padding: 10px 14px; margin: 0;
-    }
-    h2 { font-size: 1.4em; color: #1e293b; margin: .5em 0; }
-    h3 { font-size: 1.2em; color: #334155; margin: .4em 0; }
-    h4 { font-size: 1.05em; color: #475569; margin: .3em 0; }
-    img { max-width:100%; border-radius:8px; height:auto; display:block; margin:8px auto; }
-    .tmc-video-wrap { position:relative; padding-bottom:56.25%; height:0;
-      overflow:hidden; border-radius:12px; margin:14px 0; background:#000; }
-    .tmc-video-wrap iframe { position:absolute; top:0; left:0;
-      width:100%; height:100%; border:none; }
-  `,
-  setup: function(editor) {
+function setActiveRE(el) { _reActive = el; }
 
-    // ── زر: إدراج صورة عبر رابط ──
-    editor.ui.registry.addButton('tmc_imgurl', {
-      icon   : 'image',
-      tooltip: 'إدراج صورة برابط URL',
-      onAction: function() {
-        const url = prompt('🖼 أدخل رابط الصورة (URL):');
-        if (!url || !url.trim()) return;
-        editor.insertContent(
-          `<img src="${url.trim()}" alt="صورة" style="max-width:100%;border-radius:8px;">`
-        );
-      }
-    });
+function execRich(cmd, val) {
+  if (_reActive) _reActive.focus();
+  document.execCommand(cmd, false, val || null);
+  if (_reActive) _reActive.focus();
+}
 
-    // ── زر: رفع صورة من الجهاز ──
-    editor.ui.registry.addButton('tmc_imgupload', {
-      icon   : 'upload',
-      tooltip: 'رفع صورة من جهازك',
-      onAction: function() {
-        const inp = document.createElement('input');
-        inp.type   = 'file';
-        inp.accept = 'image/*';
-        inp.onchange = function() {
-          const file = inp.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            editor.insertContent(
-              `<img src="${e.target.result}" alt="${file.name}"
-               style="max-width:100%;border-radius:8px;">`
-            );
-          };
-          reader.readAsDataURL(file);
-        };
-        inp.click();
-      }
-    });
+function execRichColor(inputEl, cmd) {
+  // حفظ التحديد قبل فتح color picker
+  if (_reActive) _reActive.focus();
+  inputEl.addEventListener('change', function onchange() {
+    if (_reActive) _reActive.focus();
+    document.execCommand(cmd, false, this.value);
+    inputEl.removeEventListener('change', onchange);
+  }, { once: true });
+}
 
-    // ── زر: إدراج فيديو (YouTube / Google Drive / رابط mp4) ──
-    editor.ui.registry.addButton('tmc_video', {
-      icon   : 'embed',
-      tooltip: 'إدراج فيديو (YouTube أو Google Drive)',
-      onAction: function() {
-        const url = prompt(
-          '▶ أدخل رابط الفيديو:\n• YouTube: https://youtube.com/watch?v=...\n• Google Drive: https://drive.google.com/file/d/...\n• رابط mp4 مباشر'
-        );
-        if (!url || !url.trim()) return;
-        const u = url.trim();
+/* الشريط المشترك — يُعرض داخل كل بطاقة */
+function richToolbar(scope) {
+  return `
+  <div class="re-toolbar" onmousedown="event.preventDefault()">
+    <div class="rtb-group">
+      <button class="rtb-btn" title="عريض (Ctrl+B)"
+              onclick="execRich('bold')"><b>B</b></button>
+      <button class="rtb-btn" title="مائل (Ctrl+I)"
+              onclick="execRich('italic')"><i>I</i></button>
+      <button class="rtb-btn" title="خط تحتي (Ctrl+U)"
+              onclick="execRich('underline')"><u>U</u></button>
+      <button class="rtb-btn" title="يتوسطه خط"
+              onclick="execRich('strikeThrough')"><s>S</s></button>
+    </div>
+    <div class="rtb-group">
+      <label class="rtb-color-btn" title="لون النص" onmousedown="event.stopPropagation()">
+        <span class="rtb-color-label rtb-text-color">A</span>
+        <input type="color" value="#e53935"
+               onchange="if(_reActive)_reActive.focus();document.execCommand('foreColor',false,this.value)">
+      </label>
+      <label class="rtb-color-btn" title="تظليل" onmousedown="event.stopPropagation()">
+        <span class="rtb-color-label rtb-hl-color">🖍</span>
+        <input type="color" value="#fff176"
+               onchange="if(_reActive)_reActive.focus();document.execCommand('hiliteColor',false,this.value)">
+      </label>
+    </div>
+    <div class="rtb-group">
+      <select class="rtb-select" title="حجم الخط"
+              onmousedown="event.stopPropagation()"
+              onchange="if(_reActive)_reActive.focus();document.execCommand('fontSize',false,this.value)">
+        <option value="1">XS</option>
+        <option value="2">S</option>
+        <option value="3" selected>M</option>
+        <option value="4">L</option>
+        <option value="5">XL</option>
+        <option value="6">XXL</option>
+      </select>
+    </div>
+    <div class="rtb-group">
+      <button class="rtb-btn" title="محاذاة يمين"
+              onclick="execRich('justifyRight')">⇤</button>
+      <button class="rtb-btn" title="توسيط"
+              onclick="execRich('justifyCenter')">≡</button>
+      <button class="rtb-btn" title="محاذاة يسار"
+              onclick="execRich('justifyLeft')">⇥</button>
+    </div>
+    <div class="rtb-group">
+      <button class="rtb-btn" title="قائمة نقطية"
+              onclick="execRich('insertUnorderedList')">• ≡</button>
+      <button class="rtb-btn" title="قائمة مرقمة"
+              onclick="execRich('insertOrderedList')">1 ≡</button>
+    </div>
+    <div class="rtb-group">
+      <button class="rtb-btn rtb-btn-danger" title="مسح التنسيق"
+              onclick="execRich('removeFormat')">✕</button>
+    </div>
+  </div>`;
+}
 
-        // YouTube
-        const yt = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?\s/]+)/);
-        if (yt) {
-          editor.insertContent(
-            `<div class="tmc-video-wrap">
-               <iframe src="https://www.youtube.com/embed/${yt[1]}?rel=0"
-                 allowfullscreen loading="lazy"></iframe>
-             </div><p></p>`
-          );
-          return;
-        }
-
-        // Google Drive
-        const gd = u.match(/drive\.google\.com\/file\/d\/([^/?#\s]+)/);
-        if (gd) {
-          editor.insertContent(
-            `<div class="tmc-video-wrap">
-               <iframe src="https://drive.google.com/file/d/${gd[1]}/preview"
-                 allowfullscreen></iframe>
-             </div><p></p>`
-          );
-          return;
-        }
-
-        // رابط mp4 / webm مباشر
-        if (/\.(mp4|webm|ogg)(\?|$)/i.test(u)) {
-          editor.insertContent(
-            `<video controls style="max-width:100%;border-radius:12px;margin:12px 0">
-               <source src="${u}">
-             </video><p></p>`
-          );
-          return;
-        }
-
-        alert('⚠ الرابط غير مدعوم.\nاستخدم رابط YouTube أو Google Drive أو ملف mp4 مباشر.');
-      }
-    });
-
-    // ── ارتفاع المحرر ──
-    editor.on('init', function() {
-      const minH = parseInt(editor.getElement().dataset.minHeight) || 120;
-      editor.getContainer().style.minHeight = minH + 'px';
-      const iframe = editor.getContainer().querySelector('.tox-edit-area__iframe');
-      if (iframe) iframe.style.minHeight = (minH - 50) + 'px';
-    });
-  }
-};
-
-/* ينشئ textarea placeholder — سيتحول لمحرر TinyMCE بعد رسم DOM */
 function renderRichEditor(html, id, minHeight, placeholder) {
-  return `<textarea class="tmc-target" id="${id}"
-    data-min-height="${minHeight || 120}"
-    placeholder="${placeholder || 'اكتب هنا...'}">${html || ''}</textarea>`;
-}
-
-/* تهيئة جميع المحررات غير المهيأة */
-async function initTinyMCE() {
-  if (typeof tinymce === 'undefined') return;
-  const targets = document.querySelectorAll('.tmc-target:not([data-tmc-ready])');
-  if (!targets.length) return;
-  targets.forEach(el => el.setAttribute('data-tmc-ready', '1'));
-  try {
-    const instances = await tinymce.init({
-      ..._TMC_CONFIG,
-      selector: '.tmc-target[data-tmc-ready]'
-    });
-    const arr = Array.isArray(instances) ? instances : (instances ? [instances] : []);
-    arr.forEach(ed => { if (ed && ed.id) _tmcEditors.set(ed.id, ed); });
-  } catch(err) {
-    console.error('[TinyMCE] خطأ في التهيئة:', err);
-  }
-}
-
-/* تدمير جميع المحررات أو تلك التي تبدأ بـ prefix */
-function destroyCKEditors(prefix) {
-  if (typeof tinymce === 'undefined') return;
-  for (const [id] of [..._tmcEditors]) {
-    if (!prefix || id.startsWith(prefix)) {
-      tinymce.remove('#' + id);
-      _tmcEditors.delete(id);
-    }
-  }
-}
-
-/* قراءة محتوى محرر بمعرّفه */
-function getCKData(id) {
-  if (typeof tinymce === 'undefined') return '';
-  const ed = tinymce.get(id);
-  return ed ? ed.getContent() : '';
+  return `
+    <div class="re-wrap">
+      ${richToolbar(id)}
+      <div class="re-content" id="${id}" contenteditable="true"
+           style="min-height:${minHeight || 80}px"
+           placeholder="${placeholder || 'اكتب هنا...'}"
+           onfocus="setActiveRE(this)"
+           onmousedown="setActiveRE(this)">${html || ''}</div>
+    </div>`;
 }
 
 // ===================================================
@@ -711,7 +622,6 @@ function getLesson(al) {
 }
 
 function renderLessonEditor() {
-  destroyCKEditors(); // تدمير جميع المحررات القديمة قبل إعادة الرسم
   const { grade, sem, unit, lesson } = getLesson(activeLesson);
   const editor = document.getElementById('lesson-editor');
 
@@ -819,9 +729,6 @@ function renderLessonEditor() {
       <button class="save-lesson-btn" onclick="saveLessonChanges()">💾 حفظ التعديلات</button>
     </div>
   `;
-
-  // تهيئة CKEditor بعد رسم DOM
-  setTimeout(() => initTinyMCE(), 0);
 }
 
 function renderQuestionsList(questions) {
@@ -884,16 +791,18 @@ function deleteKeyPoint(i) {
 }
 
 function addKeyPoint() {
+  // حفظ HTML الحالي أولاً
   _syncKPFromDOM();
   const { lesson } = getLesson(activeLesson);
   lesson.keyPoints.push('');
   renderLessonEditor();
-  // التركيز يحدث تلقائياً بعد تهيئة CKEditor
-  setTimeout(() => {
-    const lastIdx = lesson.keyPoints.length - 1;
-    const lastEd = tinymce.get('kp-re-' + lastIdx);
-    if (lastEd) lastEd.focus();
-  }, 200);
+  // تركيز على آخر محرر
+  const editors = document.querySelectorAll('#keypoints-list .re-content');
+  if (editors.length) {
+    const last = editors[editors.length - 1];
+    last.focus();
+    setActiveRE(last);
+  }
 }
 
 function moveKeyPoint(i, dir) {
@@ -903,10 +812,9 @@ function moveKeyPoint(i, dir) {
   if (j < 0 || j >= lesson.keyPoints.length) return;
   [lesson.keyPoints[i], lesson.keyPoints[j]] = [lesson.keyPoints[j], lesson.keyPoints[i]];
   renderLessonEditor();
-  setTimeout(() => {
-    const targetEd = tinymce.get('kp-re-' + j);
-    if (targetEd) targetEd.focus();
-  }, 200);
+  // إعادة التركيز على النقطة المنقولة
+  const targetEditor = document.getElementById(`kp-re-${j}`);
+  if (targetEditor) { targetEditor.focus(); setActiveRE(targetEditor); }
 }
 
 function setKpLayout(layout) {
@@ -917,18 +825,14 @@ function setKpLayout(layout) {
   renderLessonEditor();
 }
 
-/* مزامنة محتوى النقاط من CKEditor إلى lesson object */
+/* مزامنة محتوى النقاط من DOM إلى lesson object */
 function _syncKPFromDOM() {
   if (!activeLesson) return;
   const { lesson } = getLesson(activeLesson);
-  const kps = [];
-  let i = 0;
-  while (typeof tinymce !== 'undefined' && !!tinymce.get('kp-re-' + i)) {
-    const data = getCKData('kp-re-' + i).trim();
-    if (data) kps.push(data);
-    i++;
+  const editors = document.querySelectorAll('#keypoints-list .re-content');
+  if (editors.length) {
+    lesson.keyPoints = [...editors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
   }
-  if (i > 0) lesson.keyPoints = kps;
 }
 
 function saveLessonChanges() {
@@ -937,22 +841,17 @@ function saveLessonChanges() {
   // اسم الدرس
   lesson.name = document.getElementById('f-name').value.trim();
 
-  // الملخص من CKEditor
-  lesson.summary = getCKData('f-summary');
+  // الملخص من المحرر الغني
+  const summaryEl = document.getElementById('f-summary');
+  if (summaryEl) lesson.summary = summaryEl.innerHTML.trim();
 
-  // قراءة الأهداف من textarea (بسيطة بلا تنسيق)
+  // قراءة الأهداف من DOM مباشرة
   const objTextareas = document.querySelectorAll('#objectives-list textarea');
   lesson.objectives = [...objTextareas].map(t => t.value.trim()).filter(v => v);
 
-  // قراءة النقاط الرئيسية من CKEditor
-  const kps = [];
-  let _kpi = 0;
-  while (typeof tinymce !== 'undefined' && !!tinymce.get('kp-re-' + _kpi)) {
-    const d = getCKData('kp-re-' + _kpi).trim();
-    if (d) kps.push(d);
-    _kpi++;
-  }
-  lesson.keyPoints = kps;
+  // قراءة النقاط الرئيسية من المحررات الغنية
+  const kpEditors = document.querySelectorAll('#keypoints-list .re-content');
+  lesson.keyPoints = [...kpEditors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
 
   // قراءة الأقسام المخصصة من DOM
   _syncCSFromDOM();
@@ -1066,14 +965,11 @@ function moveCustomSection(i, dir) {
 }
 
 function _reRenderCSList() {
-  _syncCSFromDOM();
-  destroyCKEditors('cs-re-'); // تدمير محررات الأقسام فقط
   const { lesson } = getLesson(activeLesson);
   const list = document.getElementById('custom-sections-list');
   if (!list) return;
   const cs = lesson.customSections || [];
   list.innerHTML = cs.map((s, i) => renderCSItem(s, i, cs.length)).join('');
-  setTimeout(() => initTinyMCE(), 0);
 }
 
 function _syncCSFromDOM() {
@@ -1084,7 +980,7 @@ function _syncCSFromDOM() {
   lesson.customSections = [...cards].map((card, i) => {
     const icon    = card.querySelector(`#cs-icon-${i}`)?.value || '📌';
     const title   = card.querySelector(`#cs-title-${i}`)?.value || '';
-    const content = getCKData('cs-re-' + i); // قراءة من CKEditor
+    const content = card.querySelector('.re-content')?.innerHTML.trim() || '';
     const prev    = (lesson.customSections || [])[i] || {};
     return { id: prev.id || 'cs_' + Date.now(), icon, title, content };
   });

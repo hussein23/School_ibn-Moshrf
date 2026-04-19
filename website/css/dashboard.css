@@ -459,52 +459,7 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 .add-item-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
 /* ==============================================
-   TinyMCE 6 — تخصيص المظهر
-   ============================================== */
-
-/* إخفاء الـ textarea الأصلي قبل تهيئة TinyMCE */
-textarea.tmc-target { display: none; }
-
-/* حاوية TinyMCE */
-.tox.tox-tinymce {
-  border: 2px solid var(--border) !important;
-  border-radius: 12px !important;
-  overflow: hidden;
-  transition: border-color 0.2s;
-  font-family: 'Segoe UI', Tahoma, sans-serif !important;
-}
-.tox.tox-tinymce:focus-within {
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
-}
-
-/* شريط الأدوات */
-.tox .tox-toolbar,
-.tox .tox-toolbar__overflow,
-.tox .tox-toolbar-overlord {
-  background: #F8FAFC !important;
-  border-bottom: 1px solid var(--border) !important;
-  padding: 4px 6px !important;
-}
-.tox .tox-toolbar__primary { background: transparent !important; }
-.tox .tox-tbtn { border-radius: 6px !important; }
-.tox .tox-tbtn:hover { background: #E2E8F0 !important; }
-.tox .tox-tbtn--enabled { background: #E2E8F0 !important; }
-
-/* إخفاء شعار TinyMCE */
-.tox .tox-statusbar__branding,
-.tox .tox-promotion { display: none !important; }
-
-/* داخل بطاقة النقاط والأقسام */
-.kp-item-card .tox.tox-tinymce,
-.cs-item-card .tox.tox-tinymce {
-  border: none !important;
-  border-radius: 0 !important;
-  border-top: 1px solid var(--border) !important;
-}
-
-/* ==============================================
-   محرر النصوص الغني — Rich Text Editor (قديم - مُبقى للتوافق)
+   محرر النصوص الغني — Rich Text Editor
    ============================================== */
 .re-wrap {
   border: 2px solid var(--border);
