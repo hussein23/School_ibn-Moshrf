@@ -493,97 +493,176 @@ function togglePass(id) {
 }
 
 // ===================================================
-//  محرر النصوص الغني (Rich Text Editor)
+//  محرر النصوص الغني — TinyMCE 6
 // ===================================================
-let _reActive = null; // العنصر contenteditable النشط حالياً
 
-function setActiveRE(el) { _reActive = el; }
+/** إعداد TinyMCE المشترك لكل المحررات */
+const _TMC_CONFIG = {
+  base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
+  suffix: '.min',
+  directionality: 'rtl',
+  language: 'ar',
+  language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@23.10.9/langs6/ar.js',
+  menubar: 'file edit view insert format tools table',
+  plugins: [
+    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+    'insertdatetime', 'media', 'table', 'wordcount', 'emoticons',
+    'codesample', 'pagebreak', 'nonbreaking', 'quickbars', 'help'
+  ].join(' '),
+  toolbar: [
+    'undo redo | styles | fontfamily fontsize |',
+    'bold italic underline strikethrough | forecolor backcolor |',
+    'alignright aligncenter alignleft alignjustify |',
+    'bullist numlist outdent indent | blockquote | hr pagebreak |',
+    'link image media table charmap emoticons codesample |',
+    'searchreplace visualblocks fullscreen code | removeformat | help'
+  ].join(' '),
+  quickbars_selection_toolbar: 'bold italic underline | forecolor backcolor | quicklink blockquote',
+  quickbars_insert_toolbar: 'image media table',
+  image_advtab: true,
+  image_uploadtab: true,
+  automatic_uploads: true,
+  file_picker_types: 'image',
+  file_picker_callback: function (cb, value, meta) {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.onchange = function () {
+      const file = this.files[0];
+      const reader = new FileReader();
+      reader.onload = function () { cb(reader.result, { title: file.name }); };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  },
+  images_upload_handler: function (blobInfo) {
+    return new Promise(function (resolve) {
+      resolve('data:' + blobInfo.blob().type + ';base64,' + blobInfo.base64());
+    });
+  },
+  media_live_embeds: true,
+  media_alt_source: false,
+  table_default_attributes: { border: '0' },
+  table_default_styles: { 'border-collapse': 'collapse', width: '100%' },
+  codesample_languages: [
+    { text: 'HTML/XML', value: 'markup' },
+    { text: 'JavaScript', value: 'javascript' },
+    { text: 'Python', value: 'python' },
+    { text: 'CSS', value: 'css' }
+  ],
+  skin: 'oxide',
+  content_css: 'default',
+  content_style: `
+    body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 14px;
+           direction: rtl; text-align: right; color: #1e293b; line-height: 1.7; }
+    img { max-width: 100%; height: auto; border-radius: 6px; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #cbd5e1; padding: 8px 12px; }
+    th { background: #f1f5f9; font-weight: 700; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px;
+          font-size: 13px; overflow-x: auto; }
+    blockquote { border-right: 4px solid #6366f1; margin: 0; padding: 8px 16px;
+                 background: #f8fafc; color: #475569; }
+  `,
+  promotion: false,
+  branding: false,
+  resize: true,
+  statusbar: true,
+  setup: function (editor) {
+    // زر رفع فيديو / رابط YouTube / Google Drive
+    editor.ui.registry.addButton('tmc_video', {
+      icon: 'embed',
+      tooltip: 'إدراج فيديو (YouTube / Google Drive / رابط مباشر)',
+      onAction: function () {
+        const url = prompt('أدخل رابط الفيديو (YouTube أو Google Drive أو .mp4):', '');
+        if (!url) return;
+        let embedHtml = '';
+        // YouTube
+        const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
+        if (ytMatch) {
+          embedHtml = `<div class="video-wrap" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:12px 0">
+            <iframe src="https://www.youtube.com/embed/${ytMatch[1]}"
+              style="position:absolute;top:0;right:0;width:100%;height:100%;border:0"
+              allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>
+          </div>`;
+        }
+        // Google Drive
+        else if (url.includes('drive.google.com')) {
+          const driveId = url.match(/\/d\/([\w-]+)/)?.[1] || url.match(/id=([\w-]+)/)?.[1];
+          if (driveId) {
+            embedHtml = `<div class="video-wrap" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:12px 0">
+              <iframe src="https://drive.google.com/file/d/${driveId}/preview"
+                style="position:absolute;top:0;right:0;width:100%;height:100%;border:0"
+                allowfullscreen></iframe>
+            </div>`;
+          }
+        }
+        // MP4 مباشر
+        else if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) {
+          embedHtml = `<video controls style="width:100%;border-radius:10px;margin:12px 0">
+            <source src="${url}"><p>متصفحك لا يدعم تشغيل الفيديو.</p></video>`;
+        }
+        if (embedHtml) {
+          editor.insertContent(embedHtml);
+        } else {
+          alert('رابط غير مدعوم. استخدم YouTube أو Google Drive أو رابط .mp4 مباشر');
+        }
+      }
+    });
+  }
+};
 
-function execRich(cmd, val) {
-  if (_reActive) _reActive.focus();
-  document.execCommand(cmd, false, val || null);
-  if (_reActive) _reActive.focus();
+/** تهيئة TinyMCE على كل .tmc-target داخل حاوية معينة */
+function initTinyMCE(minHeight) {
+  if (typeof tinymce === 'undefined') return;
+  const targets = document.querySelectorAll('.tmc-target:not([data-tmc-init])');
+  targets.forEach(function (el) {
+    el.setAttribute('data-tmc-init', '1');
+    tinymce.init(Object.assign({}, _TMC_CONFIG, {
+      target: el,
+      min_height: minHeight || 160,
+      toolbar: _TMC_CONFIG.toolbar + ' | tmc_video'
+    }));
+  });
 }
 
-function execRichColor(inputEl, cmd) {
-  // حفظ التحديد قبل فتح color picker
-  if (_reActive) _reActive.focus();
-  inputEl.addEventListener('change', function onchange() {
-    if (_reActive) _reActive.focus();
-    document.execCommand(cmd, false, this.value);
-    inputEl.removeEventListener('change', onchange);
-  }, { once: true });
+/** إتلاف محرر TinyMCE بمعرّفه */
+function destroyTMC(id) {
+  if (typeof tinymce === 'undefined') return;
+  const ed = tinymce.get(id);
+  if (ed) ed.remove();
+  // أزل علامة التهيئة كذلك
+  const el = document.getElementById(id);
+  if (el) el.removeAttribute('data-tmc-init');
 }
 
-/* الشريط المشترك — يُعرض داخل كل بطاقة */
-function richToolbar(scope) {
-  return `
-  <div class="re-toolbar" onmousedown="event.preventDefault()">
-    <div class="rtb-group">
-      <button class="rtb-btn" title="عريض (Ctrl+B)"
-              onclick="execRich('bold')"><b>B</b></button>
-      <button class="rtb-btn" title="مائل (Ctrl+I)"
-              onclick="execRich('italic')"><i>I</i></button>
-      <button class="rtb-btn" title="خط تحتي (Ctrl+U)"
-              onclick="execRich('underline')"><u>U</u></button>
-      <button class="rtb-btn" title="يتوسطه خط"
-              onclick="execRich('strikeThrough')"><s>S</s></button>
-    </div>
-    <div class="rtb-group">
-      <label class="rtb-color-btn" title="لون النص" onmousedown="event.stopPropagation()">
-        <span class="rtb-color-label rtb-text-color">A</span>
-        <input type="color" value="#e53935"
-               onchange="if(_reActive)_reActive.focus();document.execCommand('foreColor',false,this.value)">
-      </label>
-      <label class="rtb-color-btn" title="تظليل" onmousedown="event.stopPropagation()">
-        <span class="rtb-color-label rtb-hl-color">🖍</span>
-        <input type="color" value="#fff176"
-               onchange="if(_reActive)_reActive.focus();document.execCommand('hiliteColor',false,this.value)">
-      </label>
-    </div>
-    <div class="rtb-group">
-      <select class="rtb-select" title="حجم الخط"
-              onmousedown="event.stopPropagation()"
-              onchange="if(_reActive)_reActive.focus();document.execCommand('fontSize',false,this.value)">
-        <option value="1">XS</option>
-        <option value="2">S</option>
-        <option value="3" selected>M</option>
-        <option value="4">L</option>
-        <option value="5">XL</option>
-        <option value="6">XXL</option>
-      </select>
-    </div>
-    <div class="rtb-group">
-      <button class="rtb-btn" title="محاذاة يمين"
-              onclick="execRich('justifyRight')">⇤</button>
-      <button class="rtb-btn" title="توسيط"
-              onclick="execRich('justifyCenter')">≡</button>
-      <button class="rtb-btn" title="محاذاة يسار"
-              onclick="execRich('justifyLeft')">⇥</button>
-    </div>
-    <div class="rtb-group">
-      <button class="rtb-btn" title="قائمة نقطية"
-              onclick="execRich('insertUnorderedList')">• ≡</button>
-      <button class="rtb-btn" title="قائمة مرقمة"
-              onclick="execRich('insertOrderedList')">1 ≡</button>
-    </div>
-    <div class="rtb-group">
-      <button class="rtb-btn rtb-btn-danger" title="مسح التنسيق"
-              onclick="execRich('removeFormat')">✕</button>
-    </div>
-  </div>`;
+/** إتلاف كل محررات TinyMCE في حاوية */
+function destroyAllTMC(containerSelector) {
+  if (typeof tinymce === 'undefined') return;
+  const container = typeof containerSelector === 'string'
+    ? document.querySelector(containerSelector)
+    : containerSelector;
+  if (!container) return;
+  container.querySelectorAll('.tmc-target[data-tmc-init]').forEach(function (el) {
+    const ed = tinymce.get(el.id);
+    if (ed) ed.remove();
+    el.removeAttribute('data-tmc-init');
+  });
 }
 
+/** قراءة محتوى HTML من محرر TinyMCE */
+function getCKData(id) {
+  if (typeof tinymce === 'undefined') return '';
+  const ed = tinymce.get(id);
+  return ed ? ed.getContent() : (document.getElementById(id)?.value || '');
+}
+
+/** عرض عنصر textarea يتحول لاحقاً إلى TinyMCE */
 function renderRichEditor(html, id, minHeight, placeholder) {
-  return `
-    <div class="re-wrap">
-      ${richToolbar(id)}
-      <div class="re-content" id="${id}" contenteditable="true"
-           style="min-height:${minHeight || 80}px"
-           placeholder="${placeholder || 'اكتب هنا...'}"
-           onfocus="setActiveRE(this)"
-           onmousedown="setActiveRE(this)">${html || ''}</div>
-    </div>`;
+  return `<textarea class="tmc-target" id="${id}"
+    style="min-height:${minHeight || 80}px"
+    placeholder="${placeholder || 'اكتب هنا...'}">${html || ''}</textarea>`;
 }
 
 // ===================================================
@@ -624,6 +703,9 @@ function getLesson(al) {
 function renderLessonEditor() {
   const { grade, sem, unit, lesson } = getLesson(activeLesson);
   const editor = document.getElementById('lesson-editor');
+
+  // إتلاف أي محررات TinyMCE سابقة قبل إعادة رسم الـ HTML
+  destroyAllTMC(editor);
 
   document.getElementById('overview-panel').classList.add('hidden');
   editor.classList.remove('hidden');
@@ -729,6 +811,9 @@ function renderLessonEditor() {
       <button class="save-lesson-btn" onclick="saveLessonChanges()">💾 حفظ التعديلات</button>
     </div>
   `;
+
+  // تهيئة TinyMCE على جميع المحررات بعد رسم الـ HTML
+  setTimeout(() => initTinyMCE(120), 50);
 }
 
 function renderQuestionsList(questions) {
@@ -783,7 +868,6 @@ function addObjective() {
 }
 
 function deleteKeyPoint(i) {
-  // حفظ HTML الحالي لكل النقاط قبل الحذف
   _syncKPFromDOM();
   const { lesson } = getLesson(activeLesson);
   lesson.keyPoints.splice(i, 1);
@@ -791,18 +875,16 @@ function deleteKeyPoint(i) {
 }
 
 function addKeyPoint() {
-  // حفظ HTML الحالي أولاً
   _syncKPFromDOM();
   const { lesson } = getLesson(activeLesson);
   lesson.keyPoints.push('');
   renderLessonEditor();
-  // تركيز على آخر محرر
-  const editors = document.querySelectorAll('#keypoints-list .re-content');
-  if (editors.length) {
-    const last = editors[editors.length - 1];
-    last.focus();
-    setActiveRE(last);
-  }
+  // التركيز على آخر محرر بعد تهيئة TinyMCE
+  setTimeout(() => {
+    const lastIdx = lesson.keyPoints.length - 1;
+    const lastEd = typeof tinymce !== 'undefined' ? tinymce.get('kp-re-' + lastIdx) : null;
+    if (lastEd) lastEd.focus();
+  }, 400);
 }
 
 function moveKeyPoint(i, dir) {
@@ -812,54 +894,69 @@ function moveKeyPoint(i, dir) {
   if (j < 0 || j >= lesson.keyPoints.length) return;
   [lesson.keyPoints[i], lesson.keyPoints[j]] = [lesson.keyPoints[j], lesson.keyPoints[i]];
   renderLessonEditor();
-  // إعادة التركيز على النقطة المنقولة
-  const targetEditor = document.getElementById(`kp-re-${j}`);
-  if (targetEditor) { targetEditor.focus(); setActiveRE(targetEditor); }
+  setTimeout(() => {
+    const targetEd = typeof tinymce !== 'undefined' ? tinymce.get('kp-re-' + j) : null;
+    if (targetEd) targetEd.focus();
+  }, 400);
 }
 
 function setKpLayout(layout) {
-  // مزامنة المحتوى الحالي أولاً حتى لا يضيع
   _syncKPFromDOM();
   const { lesson } = getLesson(activeLesson);
   lesson.kpLayout = layout;
   renderLessonEditor();
 }
 
-/* مزامنة محتوى النقاط من DOM إلى lesson object */
+/* مزامنة محتوى النقاط الرئيسية من TinyMCE إلى lesson object */
 function _syncKPFromDOM() {
   if (!activeLesson) return;
   const { lesson } = getLesson(activeLesson);
-  const editors = document.querySelectorAll('#keypoints-list .re-content');
-  if (editors.length) {
-    lesson.keyPoints = [...editors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
+  if (typeof tinymce === 'undefined') return;
+  const kps = [];
+  let i = 0;
+  while (tinymce.get('kp-re-' + i)) {
+    const d = tinymce.get('kp-re-' + i).getContent().trim();
+    if (d) kps.push(d);
+    i++;
   }
+  if (i > 0) lesson.keyPoints = kps;
 }
 
 function saveLessonChanges() {
-  const { lesson } = getLesson(activeLesson);
+  try {
+    const { lesson } = getLesson(activeLesson);
 
-  // اسم الدرس
-  lesson.name = document.getElementById('f-name').value.trim();
+    // اسم الدرس
+    lesson.name = document.getElementById('f-name').value.trim();
 
-  // الملخص من المحرر الغني
-  const summaryEl = document.getElementById('f-summary');
-  if (summaryEl) lesson.summary = summaryEl.innerHTML.trim();
+    // الملخص من TinyMCE
+    lesson.summary = getCKData('f-summary');
 
-  // قراءة الأهداف من DOM مباشرة
-  const objTextareas = document.querySelectorAll('#objectives-list textarea');
-  lesson.objectives = [...objTextareas].map(t => t.value.trim()).filter(v => v);
+    // قراءة الأهداف من textarea (بسيطة بلا تنسيق)
+    const objTextareas = document.querySelectorAll('#objectives-list textarea');
+    lesson.objectives = [...objTextareas].map(t => t.value.trim()).filter(v => v);
 
-  // قراءة النقاط الرئيسية من المحررات الغنية
-  const kpEditors = document.querySelectorAll('#keypoints-list .re-content');
-  lesson.keyPoints = [...kpEditors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
+    // قراءة النقاط الرئيسية من TinyMCE
+    const kps = [];
+    let _kpi = 0;
+    while (typeof tinymce !== 'undefined' && tinymce.get('kp-re-' + _kpi)) {
+      const d = tinymce.get('kp-re-' + _kpi).getContent().trim();
+      if (d) kps.push(d);
+      _kpi++;
+    }
+    lesson.keyPoints = kps;
 
-  // قراءة الأقسام المخصصة من DOM
-  _syncCSFromDOM();
+    // قراءة الأقسام المخصصة من DOM
+    _syncCSFromDOM();
 
-  saveCurriculum();
-  renderSidebar();
-  renderStats();
-  showToast('✅ تم حفظ التعديلات');
+    saveCurriculum();
+    renderSidebar();
+    renderStats();
+    showToast('✅ تم حفظ التعديلات');
+  } catch (err) {
+    console.error('[saveLessonChanges] خطأ:', err);
+    showToast('❌ حدث خطأ أثناء الحفظ — راجع Console');
+  }
 }
 
 // ===================================================
@@ -968,8 +1065,11 @@ function _reRenderCSList() {
   const { lesson } = getLesson(activeLesson);
   const list = document.getElementById('custom-sections-list');
   if (!list) return;
+  // إتلاف محررات TinyMCE القديمة أولاً
+  destroyAllTMC(list);
   const cs = lesson.customSections || [];
   list.innerHTML = cs.map((s, i) => renderCSItem(s, i, cs.length)).join('');
+  setTimeout(() => initTinyMCE(100), 50);
 }
 
 function _syncCSFromDOM() {
@@ -980,7 +1080,9 @@ function _syncCSFromDOM() {
   lesson.customSections = [...cards].map((card, i) => {
     const icon    = card.querySelector(`#cs-icon-${i}`)?.value || '📌';
     const title   = card.querySelector(`#cs-title-${i}`)?.value || '';
-    const content = card.querySelector('.re-content')?.innerHTML.trim() || '';
+    // قراءة من TinyMCE أولاً، ثم textarea عادي كاحتياط
+    const edId = `cs-re-${i}`;
+    const content = getCKData(edId) || card.querySelector('.tmc-target')?.value?.trim() || '';
     const prev    = (lesson.customSections || [])[i] || {};
     return { id: prev.id || 'cs_' + Date.now(), icon, title, content };
   });
