@@ -496,33 +496,24 @@ function togglePass(id) {
 //  محرر النصوص الغني — TinyMCE 6
 // ===================================================
 
-/** إعداد TinyMCE المشترك لكل المحررات */
+/** إعداد TinyMCE المشترك — بدون base_url (auto-detect من CDN) */
 const _TMC_CONFIG = {
-  base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
-  suffix: '.min',
+  // لا نضع base_url — TinyMCE يكتشف مساره تلقائياً من رابط السكريبت
   directionality: 'rtl',
-  language: 'ar',
-  language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@23.10.9/langs6/ar.js',
-  menubar: 'file edit view insert format tools table',
-  plugins: [
-    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-    'insertdatetime', 'media', 'table', 'wordcount', 'emoticons',
-    'codesample', 'pagebreak', 'nonbreaking', 'quickbars', 'help'
-  ].join(' '),
-  toolbar: [
-    'undo redo | styles | fontfamily fontsize |',
-    'bold italic underline strikethrough | forecolor backcolor |',
-    'alignright aligncenter alignleft alignjustify |',
-    'bullist numlist outdent indent | blockquote | hr pagebreak |',
-    'link image media table charmap emoticons codesample |',
-    'searchreplace visualblocks fullscreen code | removeformat | help'
-  ].join(' '),
+  menubar: 'edit insert format tools table',
+  plugins: 'advlist autolink lists link image charmap preview anchor ' +
+           'searchreplace visualblocks code fullscreen ' +
+           'insertdatetime media table wordcount emoticons codesample quickbars',
+  toolbar1: 'undo redo | styles | bold italic underline strikethrough | forecolor backcolor',
+  toolbar2: 'alignright aligncenter alignleft alignjustify | ' +
+            'bullist numlist outdent indent | blockquote | ' +
+            'link image media table charmap emoticons codesample | ' +
+            'searchreplace fullscreen code | removeformat | tmc_video',
+  toolbar_mode: 'wrap',
   quickbars_selection_toolbar: 'bold italic underline | forecolor backcolor | quicklink blockquote',
-  quickbars_insert_toolbar: 'image media table',
+  quickbars_insert_toolbar: false,
   image_advtab: true,
-  image_uploadtab: true,
-  automatic_uploads: true,
+  automatic_uploads: false,
   file_picker_types: 'image',
   file_picker_callback: function (cb, value, meta) {
     const input = document.createElement('input');
@@ -537,13 +528,10 @@ const _TMC_CONFIG = {
     input.click();
   },
   images_upload_handler: function (blobInfo) {
-    return new Promise(function (resolve) {
-      resolve('data:' + blobInfo.blob().type + ';base64,' + blobInfo.base64());
-    });
+    return Promise.resolve('data:' + blobInfo.blob().type + ';base64,' + blobInfo.base64());
   },
   media_live_embeds: true,
   media_alt_source: false,
-  table_default_attributes: { border: '0' },
   table_default_styles: { 'border-collapse': 'collapse', width: '100%' },
   codesample_languages: [
     { text: 'HTML/XML', value: 'markup' },
@@ -553,55 +541,43 @@ const _TMC_CONFIG = {
   ],
   skin: 'oxide',
   content_css: 'default',
-  content_style: `
-    body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 14px;
-           direction: rtl; text-align: right; color: #1e293b; line-height: 1.7; }
-    img { max-width: 100%; height: auto; border-radius: 6px; }
-    table { border-collapse: collapse; width: 100%; }
-    td, th { border: 1px solid #cbd5e1; padding: 8px 12px; }
-    th { background: #f1f5f9; font-weight: 700; }
-    pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px;
-          font-size: 13px; overflow-x: auto; }
-    blockquote { border-right: 4px solid #6366f1; margin: 0; padding: 8px 16px;
-                 background: #f8fafc; color: #475569; }
-  `,
-  promotion: false,
+  content_style: [
+    'body{font-family:Segoe UI,Tahoma,Arial,sans-serif;font-size:14px;',
+    'direction:rtl;text-align:right;color:#1e293b;line-height:1.8;padding:8px 12px}',
+    'img{max-width:100%;height:auto;border-radius:6px}',
+    'table{border-collapse:collapse;width:100%}',
+    'td,th{border:1px solid #cbd5e1;padding:8px 12px}',
+    'th{background:#f1f5f9;font-weight:700}',
+    'pre{background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}',
+    'blockquote{border-right:4px solid #6366f1;margin:0;padding:8px 16px;background:#f8fafc;color:#475569}'
+  ].join(''),
   branding: false,
+  promotion: false,
   resize: true,
   statusbar: true,
   setup: function (editor) {
-    // زر رفع فيديو / رابط YouTube / Google Drive
     editor.ui.registry.addButton('tmc_video', {
       icon: 'embed',
-      tooltip: 'إدراج فيديو (YouTube / Google Drive / رابط مباشر)',
+      tooltip: 'إدراج فيديو (YouTube / Google Drive / MP4)',
       onAction: function () {
         const url = prompt('أدخل رابط الفيديو (YouTube أو Google Drive أو .mp4):', '');
         if (!url) return;
         let embedHtml = '';
-        // YouTube
         const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
         if (ytMatch) {
-          embedHtml = `<div class="video-wrap" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:12px 0">
-            <iframe src="https://www.youtube.com/embed/${ytMatch[1]}"
-              style="position:absolute;top:0;right:0;width:100%;height:100%;border:0"
-              allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>
-          </div>`;
-        }
-        // Google Drive
-        else if (url.includes('drive.google.com')) {
-          const driveId = url.match(/\/d\/([\w-]+)/)?.[1] || url.match(/id=([\w-]+)/)?.[1];
+          embedHtml = '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:12px 0">' +
+            '<iframe src="https://www.youtube.com/embed/' + ytMatch[1] + '"' +
+            ' style="position:absolute;top:0;right:0;width:100%;height:100%;border:0"' +
+            ' allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe></div>';
+        } else if (url.includes('drive.google.com')) {
+          const driveId = (url.match(/\/d\/([\w-]+)/) || url.match(/id=([\w-]+)/) || [])[1];
           if (driveId) {
-            embedHtml = `<div class="video-wrap" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:12px 0">
-              <iframe src="https://drive.google.com/file/d/${driveId}/preview"
-                style="position:absolute;top:0;right:0;width:100%;height:100%;border:0"
-                allowfullscreen></iframe>
-            </div>`;
+            embedHtml = '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;margin:12px 0">' +
+              '<iframe src="https://drive.google.com/file/d/' + driveId + '/preview"' +
+              ' style="position:absolute;top:0;right:0;width:100%;height:100%;border:0" allowfullscreen></iframe></div>';
           }
-        }
-        // MP4 مباشر
-        else if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) {
-          embedHtml = `<video controls style="width:100%;border-radius:10px;margin:12px 0">
-            <source src="${url}"><p>متصفحك لا يدعم تشغيل الفيديو.</p></video>`;
+        } else if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) {
+          embedHtml = '<video controls style="width:100%;border-radius:10px;margin:12px 0"><source src="' + url + '"></video>';
         }
         if (embedHtml) {
           editor.insertContent(embedHtml);
@@ -613,16 +589,18 @@ const _TMC_CONFIG = {
   }
 };
 
-/** تهيئة TinyMCE على كل .tmc-target داخل حاوية معينة */
+/** تهيئة TinyMCE على كل .tmc-target غير مهيّأة */
 function initTinyMCE(minHeight) {
-  if (typeof tinymce === 'undefined') return;
+  if (typeof tinymce === 'undefined') {
+    console.warn('[TinyMCE] المكتبة لم تُحمَّل بعد');
+    return;
+  }
   const targets = document.querySelectorAll('.tmc-target:not([data-tmc-init])');
   targets.forEach(function (el) {
     el.setAttribute('data-tmc-init', '1');
     tinymce.init(Object.assign({}, _TMC_CONFIG, {
       target: el,
-      min_height: minHeight || 160,
-      toolbar: _TMC_CONFIG.toolbar + ' | tmc_video'
+      min_height: minHeight || 160
     }));
   });
 }
@@ -813,7 +791,7 @@ function renderLessonEditor() {
   `;
 
   // تهيئة TinyMCE على جميع المحررات بعد رسم الـ HTML
-  setTimeout(() => initTinyMCE(120), 50);
+  setTimeout(() => initTinyMCE(160), 100);
 }
 
 function renderQuestionsList(questions) {

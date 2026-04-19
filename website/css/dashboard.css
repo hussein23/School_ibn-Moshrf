@@ -522,8 +522,19 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 .tox .tox-dialog__header { background: var(--bg) !important; }
 .tox .tox-dialog__footer { background: var(--bg) !important; border-top: 1px solid var(--border) !important; }
 
-/* إخفاء textarea الأصلي قبل تهيئة TinyMCE */
-textarea.tmc-target { display: none; }
+/* textarea قبل تهيئة TinyMCE — TinyMCE يخفيه تلقائياً */
+textarea.tmc-target {
+  width: 100%;
+  min-height: 100px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  direction: rtl;
+  padding: 10px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  resize: vertical;
+  box-sizing: border-box;
+}
 
 /* ==============================================
    النقاط الرئيسية - بطاقات قابلة للترتيب
