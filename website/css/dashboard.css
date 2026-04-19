@@ -459,7 +459,49 @@ body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--tex
 .add-item-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
 /* ==============================================
-   محرر النصوص الغني — Rich Text Editor
+   CKEditor 5 — تخصيص المظهر
+   ============================================== */
+.ck-editor-target { display: none; } /* يختفي قبل التهيئة */
+
+.ck.ck-editor {
+  border-radius: 12px !important;
+  overflow: hidden;
+  border: 2px solid var(--border) !important;
+  transition: border-color 0.2s;
+}
+.ck.ck-editor:focus-within { border-color: var(--primary) !important; }
+
+.ck.ck-toolbar {
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--sidebar-bg, #F8FAFC) !important;
+  border-radius: 0 !important;
+  padding: 6px 8px !important;
+  flex-wrap: wrap !important;
+}
+.ck.ck-editor__editable {
+  min-height: 100px;
+  padding: 14px 16px !important;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  direction: rtl;
+  text-align: right;
+}
+.ck.ck-editor__editable:focus { box-shadow: none !important; }
+
+/* تعطيل شعار CKEditor */
+.ck-powered-by { display: none !important; }
+
+/* داخل بطاقة النقاط والأقسام */
+.kp-item-card .ck.ck-editor,
+.cs-item-card .ck.ck-editor {
+  border: none !important;
+  border-radius: 0 !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+/* ==============================================
+   محرر النصوص الغني — Rich Text Editor (قديم - مُبقى للتوافق)
    ============================================== */
 .re-wrap {
   border: 2px solid var(--border);

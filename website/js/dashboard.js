@@ -493,97 +493,72 @@ function togglePass(id) {
 }
 
 // ===================================================
-//  محرر النصوص الغني (Rich Text Editor)
+//  محرر النصوص الغني — CKEditor 5
 // ===================================================
-let _reActive = null; // العنصر contenteditable النشط حالياً
+const _ckEditors = new Map(); // id → instance
 
-function setActiveRE(el) { _reActive = el; }
+const _CK_TOOLBAR = [
+  'heading', '|',
+  'bold', 'italic', 'underline', 'strikethrough', '|',
+  'alignment', '|',
+  'bulletedList', 'numberedList', '|',
+  'blockQuote', 'link', '|',
+  'removeFormat', '|',
+  'undo', 'redo'
+];
 
-function execRich(cmd, val) {
-  if (_reActive) _reActive.focus();
-  document.execCommand(cmd, false, val || null);
-  if (_reActive) _reActive.focus();
-}
-
-function execRichColor(inputEl, cmd) {
-  // حفظ التحديد قبل فتح color picker
-  if (_reActive) _reActive.focus();
-  inputEl.addEventListener('change', function onchange() {
-    if (_reActive) _reActive.focus();
-    document.execCommand(cmd, false, this.value);
-    inputEl.removeEventListener('change', onchange);
-  }, { once: true });
-}
-
-/* الشريط المشترك — يُعرض داخل كل بطاقة */
-function richToolbar(scope) {
-  return `
-  <div class="re-toolbar" onmousedown="event.preventDefault()">
-    <div class="rtb-group">
-      <button class="rtb-btn" title="عريض (Ctrl+B)"
-              onclick="execRich('bold')"><b>B</b></button>
-      <button class="rtb-btn" title="مائل (Ctrl+I)"
-              onclick="execRich('italic')"><i>I</i></button>
-      <button class="rtb-btn" title="خط تحتي (Ctrl+U)"
-              onclick="execRich('underline')"><u>U</u></button>
-      <button class="rtb-btn" title="يتوسطه خط"
-              onclick="execRich('strikeThrough')"><s>S</s></button>
-    </div>
-    <div class="rtb-group">
-      <label class="rtb-color-btn" title="لون النص" onmousedown="event.stopPropagation()">
-        <span class="rtb-color-label rtb-text-color">A</span>
-        <input type="color" value="#e53935"
-               onchange="if(_reActive)_reActive.focus();document.execCommand('foreColor',false,this.value)">
-      </label>
-      <label class="rtb-color-btn" title="تظليل" onmousedown="event.stopPropagation()">
-        <span class="rtb-color-label rtb-hl-color">🖍</span>
-        <input type="color" value="#fff176"
-               onchange="if(_reActive)_reActive.focus();document.execCommand('hiliteColor',false,this.value)">
-      </label>
-    </div>
-    <div class="rtb-group">
-      <select class="rtb-select" title="حجم الخط"
-              onmousedown="event.stopPropagation()"
-              onchange="if(_reActive)_reActive.focus();document.execCommand('fontSize',false,this.value)">
-        <option value="1">XS</option>
-        <option value="2">S</option>
-        <option value="3" selected>M</option>
-        <option value="4">L</option>
-        <option value="5">XL</option>
-        <option value="6">XXL</option>
-      </select>
-    </div>
-    <div class="rtb-group">
-      <button class="rtb-btn" title="محاذاة يمين"
-              onclick="execRich('justifyRight')">⇤</button>
-      <button class="rtb-btn" title="توسيط"
-              onclick="execRich('justifyCenter')">≡</button>
-      <button class="rtb-btn" title="محاذاة يسار"
-              onclick="execRich('justifyLeft')">⇥</button>
-    </div>
-    <div class="rtb-group">
-      <button class="rtb-btn" title="قائمة نقطية"
-              onclick="execRich('insertUnorderedList')">• ≡</button>
-      <button class="rtb-btn" title="قائمة مرقمة"
-              onclick="execRich('insertOrderedList')">1 ≡</button>
-    </div>
-    <div class="rtb-group">
-      <button class="rtb-btn rtb-btn-danger" title="مسح التنسيق"
-              onclick="execRich('removeFormat')">✕</button>
-    </div>
-  </div>`;
-}
-
+/* ينشئ div placeholder — سيتحول لمحرر CKEditor بعد رسم DOM */
 function renderRichEditor(html, id, minHeight, placeholder) {
-  return `
-    <div class="re-wrap">
-      ${richToolbar(id)}
-      <div class="re-content" id="${id}" contenteditable="true"
-           style="min-height:${minHeight || 80}px"
-           placeholder="${placeholder || 'اكتب هنا...'}"
-           onfocus="setActiveRE(this)"
-           onmousedown="setActiveRE(this)">${html || ''}</div>
-    </div>`;
+  return `<div class="ck-editor-target" id="${id}"
+    data-min-height="${minHeight || 100}"
+    data-placeholder="${placeholder || 'اكتب هنا...'}">${html || ''}</div>`;
+}
+
+/* تهيئة جميع المحررات غير المهيأة في الصفحة */
+async function initCKEditors() {
+  if (typeof ClassicEditor === 'undefined') return;
+  const targets = document.querySelectorAll('.ck-editor-target:not([data-ck-ready])');
+  for (const el of targets) {
+    el.setAttribute('data-ck-ready', '1');
+    const minH = parseInt(el.dataset.minHeight) || 100;
+    try {
+      const editor = await ClassicEditor.create(el, {
+        language: { ui: 'ar', content: 'ar' },
+        toolbar:  { items: _CK_TOOLBAR, shouldNotGroupWhenFull: false },
+        placeholder: el.dataset.placeholder || 'اكتب هنا...',
+        heading: {
+          options: [
+            { model: 'paragraph',  title: 'فقرة عادية', class: 'ck-heading_paragraph' },
+            { model: 'heading2',   view: 'h2', title: 'عنوان كبير',    class: 'ck-heading_heading2' },
+            { model: 'heading3',   view: 'h3', title: 'عنوان متوسط',   class: 'ck-heading_heading3' },
+            { model: 'heading4',   view: 'h4', title: 'عنوان صغير',    class: 'ck-heading_heading4' }
+          ]
+        }
+      });
+      // تطبيق الحد الأدنى للارتفاع
+      const view = editor.editing.view.getDomRoot();
+      if (view) view.style.minHeight = minH + 'px';
+      _ckEditors.set(el.id, editor);
+    } catch (err) {
+      console.error('[CKEditor] فشل تهيئة #' + el.id, err);
+    }
+  }
+}
+
+/* تدمير جميع المحررات أو تلك التي تبدأ بـ prefix */
+function destroyCKEditors(prefix) {
+  for (const [id, editor] of [..._ckEditors]) {
+    if (!prefix || id.startsWith(prefix)) {
+      editor.destroy().catch(() => {});
+      _ckEditors.delete(id);
+    }
+  }
+}
+
+/* قراءة محتوى محرر بمعرّفه */
+function getCKData(id) {
+  const ed = _ckEditors.get(id);
+  return ed ? ed.getData() : '';
 }
 
 // ===================================================
@@ -622,6 +597,7 @@ function getLesson(al) {
 }
 
 function renderLessonEditor() {
+  destroyCKEditors(); // تدمير جميع المحررات القديمة قبل إعادة الرسم
   const { grade, sem, unit, lesson } = getLesson(activeLesson);
   const editor = document.getElementById('lesson-editor');
 
@@ -729,6 +705,9 @@ function renderLessonEditor() {
       <button class="save-lesson-btn" onclick="saveLessonChanges()">💾 حفظ التعديلات</button>
     </div>
   `;
+
+  // تهيئة CKEditor بعد رسم DOM
+  setTimeout(() => initCKEditors(), 0);
 }
 
 function renderQuestionsList(questions) {
@@ -791,18 +770,16 @@ function deleteKeyPoint(i) {
 }
 
 function addKeyPoint() {
-  // حفظ HTML الحالي أولاً
   _syncKPFromDOM();
   const { lesson } = getLesson(activeLesson);
   lesson.keyPoints.push('');
   renderLessonEditor();
-  // تركيز على آخر محرر
-  const editors = document.querySelectorAll('#keypoints-list .re-content');
-  if (editors.length) {
-    const last = editors[editors.length - 1];
-    last.focus();
-    setActiveRE(last);
-  }
+  // التركيز يحدث تلقائياً بعد تهيئة CKEditor
+  setTimeout(() => {
+    const lastIdx = lesson.keyPoints.length - 1;
+    const lastEd = _ckEditors.get('kp-re-' + lastIdx);
+    if (lastEd) lastEd.editing.view.focus();
+  }, 200);
 }
 
 function moveKeyPoint(i, dir) {
@@ -812,9 +789,10 @@ function moveKeyPoint(i, dir) {
   if (j < 0 || j >= lesson.keyPoints.length) return;
   [lesson.keyPoints[i], lesson.keyPoints[j]] = [lesson.keyPoints[j], lesson.keyPoints[i]];
   renderLessonEditor();
-  // إعادة التركيز على النقطة المنقولة
-  const targetEditor = document.getElementById(`kp-re-${j}`);
-  if (targetEditor) { targetEditor.focus(); setActiveRE(targetEditor); }
+  setTimeout(() => {
+    const targetEd = _ckEditors.get('kp-re-' + j);
+    if (targetEd) targetEd.editing.view.focus();
+  }, 200);
 }
 
 function setKpLayout(layout) {
@@ -825,14 +803,18 @@ function setKpLayout(layout) {
   renderLessonEditor();
 }
 
-/* مزامنة محتوى النقاط من DOM إلى lesson object */
+/* مزامنة محتوى النقاط من CKEditor إلى lesson object */
 function _syncKPFromDOM() {
   if (!activeLesson) return;
   const { lesson } = getLesson(activeLesson);
-  const editors = document.querySelectorAll('#keypoints-list .re-content');
-  if (editors.length) {
-    lesson.keyPoints = [...editors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
+  const kps = [];
+  let i = 0;
+  while (_ckEditors.has('kp-re-' + i)) {
+    const data = getCKData('kp-re-' + i).trim();
+    if (data) kps.push(data);
+    i++;
   }
+  if (i > 0) lesson.keyPoints = kps;
 }
 
 function saveLessonChanges() {
@@ -841,17 +823,22 @@ function saveLessonChanges() {
   // اسم الدرس
   lesson.name = document.getElementById('f-name').value.trim();
 
-  // الملخص من المحرر الغني
-  const summaryEl = document.getElementById('f-summary');
-  if (summaryEl) lesson.summary = summaryEl.innerHTML.trim();
+  // الملخص من CKEditor
+  lesson.summary = getCKData('f-summary');
 
-  // قراءة الأهداف من DOM مباشرة
+  // قراءة الأهداف من textarea (بسيطة بلا تنسيق)
   const objTextareas = document.querySelectorAll('#objectives-list textarea');
   lesson.objectives = [...objTextareas].map(t => t.value.trim()).filter(v => v);
 
-  // قراءة النقاط الرئيسية من المحررات الغنية
-  const kpEditors = document.querySelectorAll('#keypoints-list .re-content');
-  lesson.keyPoints = [...kpEditors].map(e => e.innerHTML.trim()).filter(v => v && v !== '<br>');
+  // قراءة النقاط الرئيسية من CKEditor
+  const kps = [];
+  let _kpi = 0;
+  while (_ckEditors.has('kp-re-' + _kpi)) {
+    const d = getCKData('kp-re-' + _kpi).trim();
+    if (d) kps.push(d);
+    _kpi++;
+  }
+  lesson.keyPoints = kps;
 
   // قراءة الأقسام المخصصة من DOM
   _syncCSFromDOM();
@@ -965,11 +952,14 @@ function moveCustomSection(i, dir) {
 }
 
 function _reRenderCSList() {
+  _syncCSFromDOM();
+  destroyCKEditors('cs-re-'); // تدمير محررات الأقسام فقط
   const { lesson } = getLesson(activeLesson);
   const list = document.getElementById('custom-sections-list');
   if (!list) return;
   const cs = lesson.customSections || [];
   list.innerHTML = cs.map((s, i) => renderCSItem(s, i, cs.length)).join('');
+  setTimeout(() => initCKEditors(), 0);
 }
 
 function _syncCSFromDOM() {
@@ -980,7 +970,7 @@ function _syncCSFromDOM() {
   lesson.customSections = [...cards].map((card, i) => {
     const icon    = card.querySelector(`#cs-icon-${i}`)?.value || '📌';
     const title   = card.querySelector(`#cs-title-${i}`)?.value || '';
-    const content = card.querySelector('.re-content')?.innerHTML.trim() || '';
+    const content = getCKData('cs-re-' + i); // قراءة من CKEditor
     const prev    = (lesson.customSections || [])[i] || {};
     return { id: prev.id || 'cs_' + Date.now(), icon, title, content };
   });
