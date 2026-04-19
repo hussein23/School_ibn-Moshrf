@@ -500,11 +500,11 @@ const _tmcEditors = new Map(); // id → instance
 const _TMC_CONFIG = {
   base_url : 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
   suffix   : '.min',
-  plugins  : 'lists link',
+  plugins  : 'lists link image media',
   toolbar  : 'blocks | bold italic underline strikethrough | '
            + 'forecolor backcolor | fontsize | '
            + 'alignright aligncenter alignleft | '
-           + 'bullist numlist | removeformat | undo redo',
+           + 'bullist numlist | link image media | removeformat | undo redo',
   block_formats : 'فقرة عادية=p; عنوان كبير=h2; عنوان متوسط=h3; عنوان صغير=h4',
   font_size_formats: '10pt 12pt 14pt 16pt 18pt 22pt 28pt 36pt',
   color_map_foreground: [
@@ -518,7 +518,57 @@ const _TMC_CONFIG = {
   branding       : false,
   resize         : false,
   promotion      : false,
-  content_style  : `
+
+  // ── إعدادات الصور ──
+  image_advtab        : true,
+  image_title         : true,
+  image_description   : false,
+  image_dimensions    : true,
+  images_upload_handler: function(blobInfo) {
+    // تحويل الصورة إلى Base64 لحفظها مع البيانات
+    return new Promise(function(resolve) {
+      const reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.readAsDataURL(blobInfo.blob());
+    });
+  },
+
+  // ── إعدادات الفيديو ──
+  media_live_embeds   : true,
+  media_alt_source    : false,
+  media_poster        : false,
+  media_dimensions    : true,
+  media_url_resolver  : function(data, resolve) {
+    // دعم YouTube و Google Drive و أي رابط فيديو
+    const url = data.url;
+    let embedUrl = url;
+
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?\s]+)/);
+    if (ytMatch) {
+      embedUrl = 'https://www.youtube.com/embed/' + ytMatch[1];
+      resolve({
+        html: `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">
+          <iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+            allowfullscreen loading="lazy"></iframe></div>`
+      });
+      return;
+    }
+    // Google Drive
+    const gdMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (gdMatch) {
+      embedUrl = 'https://drive.google.com/file/d/' + gdMatch[1] + '/preview';
+      resolve({
+        html: `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:12px 0">
+          <iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+            allowfullscreen></iframe></div>`
+      });
+      return;
+    }
+    resolve({ html: '' }); // اترك TinyMCE يعالج باقي الروابط
+  },
+
+  content_style: `
     body {
       font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
       font-size: 15px; direction: rtl; text-align: right;
@@ -527,13 +577,17 @@ const _TMC_CONFIG = {
     h2 { font-size: 1.4em; color: #1e293b; margin: .5em 0; }
     h3 { font-size: 1.2em; color: #334155; margin: .4em 0; }
     h4 { font-size: 1.05em; color: #475569; margin: .3em 0; }
+    img { max-width: 100%; border-radius: 8px; height: auto; }
+    iframe { max-width: 100%; border-radius: 12px; }
+    .video-wrap { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; margin:12px 0; }
+    .video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; }
   `,
   setup: function(editor) {
     editor.on('init', function() {
-      // تطبيق الحد الأدنى للارتفاع من data attribute
       const minH = parseInt(editor.getElement().dataset.minHeight) || 120;
       editor.getContainer().style.minHeight = minH + 'px';
-      editor.getContainer().querySelector('.tox-edit-area__iframe').style.minHeight = (minH - 50) + 'px';
+      const iframe = editor.getContainer().querySelector('.tox-edit-area__iframe');
+      if (iframe) iframe.style.minHeight = (minH - 50) + 'px';
     });
   }
 };
