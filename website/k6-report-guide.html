@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل اختبار الأداء — k6</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f0f4f8; color: #1e293b; direction: rtl; }
+  .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 40px; text-align: center; }
+  .header h1 { font-size: 2rem; margin-bottom: 8px; }
+  .header p { opacity: 0.85; font-size: 1.1rem; }
+  .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+  .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .card h2 { font-size: 1.2rem; color: #6366f1; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 16px; padding: 14px 0; border-bottom: 1px solid #f1f5f9; }
+  .step:last-child { border-bottom: none; }
+  .step-num { counter-increment: step; width: 32px; height: 32px; background: #6366f1; color: white;
+              border-radius: 50%; display: flex; align-items: center; justify-content: center;
+              font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+  .step-content h3 { font-size: 0.95rem; margin-bottom: 4px; }
+  .step-content p, .step-content code { font-size: 0.85rem; color: #64748b; }
+  code, pre { background: #1e293b; color: #e2e8f0; padding: 4px 10px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85rem; direction: ltr; display: inline-block; }
+  pre { padding: 16px; display: block; overflow-x: auto; margin: 10px 0; line-height: 1.7; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .metric-card { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; text-align: center; }
+  .metric-val { font-size: 1.8rem; font-weight: 700; color: #6366f1; }
+  .metric-label { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #16a34a; }
+  .badge-yellow { background: #fef9c3; color: #ca8a04; }
+  .badge-red { background: #fee2e2; color: #dc2626; }
+  .os-section { display: flex; flex-direction: column; gap: 12px; }
+  .os-row { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .os-header { background: #f1f5f9; padding: 10px 16px; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .os-body { padding: 12px 16px; }
+  .threshold { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+  .threshold:last-child { border-bottom: none; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧪 اختبار أداء موقع المهارات الرقمية</h1>
+  <p>دليل تشغيل k6 وقراءة النتائج</p>
+</div>
+
+<div class="container">
+
+  <!-- كيف تثبّت k6 -->
+  <div class="card">
+    <h2>📦 تثبيت k6 على جهازك</h2>
+    <div class="os-section">
+      <div class="os-row">
+        <div class="os-header">🪟 Windows</div>
+        <div class="os-body">
+          <p style="margin-bottom:8px;font-size:0.85rem;color:#64748b">افتح PowerShell كمسؤول:</p>
+          <pre>winget install k6 --source winget</pre>
+          <p style="margin-top:8px;font-size:0.8rem;color:#94a3b8">أو نزّل المثبّت من: <a href="https://dl.k6.io/msi/k6-latest-amd64.msi" style="color:#6366f1">dl.k6.io/msi/k6-latest-amd64.msi</a></p>
+        </div>
+      </div>
+      <div class="os-row">
+        <div class="os-header">🍎 macOS</div>
+        <div class="os-body">
+          <pre>brew install k6</pre>
+        </div>
+      </div>
+      <div class="os-row">
+        <div class="os-header">🐧 Linux (Ubuntu/Debian)</div>
+        <div class="os-body">
+          <pre>sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+    --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+    | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update && sudo apt-get install k6</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- كيف تشغّل الاختبار -->
+  <div class="card">
+    <h2>▶️ كيف تشغّل الاختبار</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>تأكد من تثبيت k6</h3>
+          <code>k6 version</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>شغّل الاختبار مع تقرير HTML</h3>
+          <pre>k6 run k6-test.js</pre>
+          <p>سيتشغّل 4 سيناريوهات متتالية (إجمالي ~3 دقائق)</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>افتح التقرير (يُنشأ تلقائياً)</h3>
+          <code>start k6-report.html</code>
+          <p style="margin-top:4px">أو <code>open k6-report.html</code> على macOS</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- السيناريوهات -->
+  <div class="card">
+    <h2>📋 السيناريوهات المبرمجة</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+      <thead>
+        <tr style="background:#f1f5f9">
+          <th style="padding:10px;text-align:right;border-bottom:2px solid #e2e8f0">السيناريو</th>
+          <th style="padding:10px;text-align:center;border-bottom:2px solid #e2e8f0">المستخدمون</th>
+          <th style="padding:10px;text-align:center;border-bottom:2px solid #e2e8f0">المدة</th>
+          <th style="padding:10px;text-align:center;border-bottom:2px solid #e2e8f0">الهدف</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #f1f5f9">🔥 إحماء تدريجي</td>
+          <td style="padding:10px;text-align:center;border-bottom:1px solid #f1f5f9">0 → 10</td>
+          <td style="padding:10px;text-align:center;border-bottom:1px solid #f1f5f9">20 ث</td>
+          <td style="padding:10px;border-bottom:1px solid #f1f5f9">التأكد من الجاهزية</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #f1f5f9">📈 تحميل طبيعي</td>
+          <td style="padding:10px;text-align:center;border-bottom:1px solid #f1f5f9">30</td>
+          <td style="padding:10px;text-align:center;border-bottom:1px solid #f1f5f9">45 ث</td>
+          <td style="padding:10px;border-bottom:1px solid #f1f5f9">p95 &lt; 500ms</td>
+        </tr>
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #f1f5f9">⚡ ذروة الضغط</td>
+          <td style="padding:10px;text-align:center;border-bottom:1px solid #f1f5f9">60</td>
+          <td style="padding:10px;text-align:center;border-bottom:1px solid #f1f5f9">40 ث</td>
+          <td style="padding:10px;border-bottom:1px solid #f1f5f9">p95 &lt; 800ms</td>
+        </tr>
+        <tr>
+          <td style="padding:10px">🌊 ضغط شديد</td>
+          <td style="padding:10px;text-align:center">100</td>
+          <td style="padding:10px;text-align:center">30 ث</td>
+          <td style="padding:10px">p95 &lt; 1500ms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- مؤشرات الأداء -->
+  <div class="card">
+    <h2>📊 مؤشرات الأداء الرئيسية</h2>
+    <div class="grid">
+      <div class="metric-card">
+        <div class="metric-val">p95</div>
+        <div class="metric-label">95% من الطلبات أسرع من هذا الزمن — الأهم</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">RPS</div>
+        <div class="metric-label">عدد الطلبات في الثانية</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">TTFB</div>
+        <div class="metric-label">وقت أول بايت من الخادم</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">Error Rate</div>
+        <div class="metric-label">نسبة الطلبات الفاشلة</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h3 style="font-size:0.95rem;margin-bottom:12px">🏆 مقياس التقييم</h3>
+      <div class="threshold">
+        <span>وقت الاستجابة المتوسط</span>
+        <div style="display:flex;gap:8px">
+          <span class="badge badge-green">ممتاز &lt; 200ms</span>
+          <span class="badge badge-yellow">جيد &lt; 500ms</span>
+          <span class="badge badge-red">بطيء &gt; 1000ms</span>
+        </div>
+      </div>
+      <div class="threshold">
+        <span>معدل النجاح</span>
+        <div style="display:flex;gap:8px">
+          <span class="badge badge-green">ممتاز ≥ 99%</span>
+          <span class="badge badge-yellow">جيد ≥ 95%</span>
+          <span class="badge badge-red">مشكلة &lt; 90%</span>
+        </div>
+      </div>
+      <div class="threshold">
+        <span>p95 عند الذروة</span>
+        <div style="display:flex;gap:8px">
+          <span class="badge badge-green">ممتاز &lt; 500ms</span>
+          <span class="badge badge-yellow">مقبول &lt; 1000ms</span>
+          <span class="badge badge-red">سيء &gt; 2000ms</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- توقعات GitHub Pages -->
+  <div class="card">
+    <h2>💡 توقعات أداء GitHub Pages</h2>
+    <p style="font-size:0.9rem;color:#64748b;margin-bottom:16px">
+      موقعك يعمل على GitHub Pages الذي يستخدم شبكة Fastly CDN العالمية. التوقعات:
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f0fdf4;border-radius:8px">
+        <span style="font-size:0.9rem">وقت استجابة الصفحة الرئيسية</span>
+        <span class="badge badge-green">50–200ms</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f0fdf4;border-radius:8px">
+        <span style="font-size:0.9rem">ملفات CSS/JS (مخزّنة بـ CDN)</span>
+        <span class="badge badge-green">20–100ms</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#fefce8;border-radius:8px">
+        <span style="font-size:0.9rem">أداء مع 100 مستخدم متزامن</span>
+        <span class="badge badge-yellow">قد يرتفع إلى 500ms</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f0fdf4;border-radius:8px">
+        <span style="font-size:0.9rem">معدل النجاح المتوقع</span>
+        <span class="badge badge-green">99.9%+</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
