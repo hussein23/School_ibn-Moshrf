@@ -12,7 +12,8 @@
   let _useFirebase = false;
 
   // ── بيانات المناهج ──
-  let _ignoreNextCurriculumUpdate = false; // لتجنب حلقة عند الحفظ
+  let _curriculumCache   = null;   // آخر نسخة من Firebase
+  let _ignoreNextCurriculumUpdate = false;
 
   // ──────────────────────────────
   //  تهيئة Firebase
@@ -65,9 +66,8 @@
         if (jsonStr) {
           try {
             const data = JSON.parse(jsonStr);
-            // حفظ محلي للعمل بدون إنترنت
+            _curriculumCache = data; // حفظ في الذاكرة دائماً
             try { localStorage.setItem('ibn_moshrf_curriculum', jsonStr); } catch(e) {}
-            // إبلاغ curriculum-loader بالتحديث الجديد
             if (window._onCurriculumUpdate) window._onCurriculumUpdate(data);
           } catch(e) {
             console.error('[FirebaseDB] خطأ في تحليل المنهج:', e);
@@ -135,6 +135,9 @@
   // ──────────────────────────────
   //  API المنهج
   // ──────────────────────────────
+  // إرجاع آخر نسخة من المنهج وصلت من Firebase
+  function dbLoadCurriculum() { return _curriculumCache; }
+
   function dbSaveCurriculum(data, onSuccess, onError) {
     // نخزّن كـ JSON string لأن Firebase يحوّل المصفوفات إلى objects
     const jsonStr = JSON.stringify(data);
@@ -166,6 +169,7 @@
     dbDeleteStudent,
     dbUpdateStudent,
     isFirebaseActive,
+    dbLoadCurriculum,
     dbSaveCurriculum
   };
 

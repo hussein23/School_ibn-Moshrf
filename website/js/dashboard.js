@@ -103,9 +103,36 @@ function _initDashboard() {
   loadCurriculum();
   renderSidebar();
   renderStats();
+
+  // استمع لتحديثات Firebase (من أجهزة/متصفحات أخرى)
+  const _prevHandler = window._onCurriculumUpdate;
+  window._onCurriculumUpdate = function(data) {
+    if (_prevHandler) _prevHandler(data);
+    // تحديث نسخة الداشبورد من Firebase
+    curriculum = deepClone(data);
+    renderSidebar();
+    renderStats();
+    // إذا لم يكن المعلم يعدّل درساً الآن، اعرض الصفحة الرئيسية
+    if (!activeLesson) showOverview();
+    setSaveStatus('☁️ تم التزامن مع Firebase');
+  };
 }
 
 function loadCurriculum() {
+  // 1. حاول قراءة آخر نسخة من Firebase (وصلت قبل دخول المعلم)
+  const firebaseData = window.FirebaseDB && window.FirebaseDB.dbLoadCurriculum
+    ? window.FirebaseDB.dbLoadCurriculum()
+    : null;
+
+  if (firebaseData) {
+    curriculum = deepClone(firebaseData);
+    // حدّث localStorage بأحدث نسخة
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(curriculum)); } catch(e) {}
+    setSaveStatus('☁️ تم التزامن مع Firebase');
+    return;
+  }
+
+  // 2. احتياط: اقرأ من localStorage
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
