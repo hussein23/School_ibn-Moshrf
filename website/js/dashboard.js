@@ -123,16 +123,30 @@ function loadCurriculum() {
 function saveCurriculum() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(curriculum));
 
-  // حفظ في Firebase ليظهر التعديل لجميع المستخدمين فوراً
   if (window.FirebaseDB && window.FirebaseDB.dbSaveCurriculum) {
-    window.FirebaseDB.dbSaveCurriculum(curriculum);
-    setSaveStatus('☁️ يتم الحفظ…');
-    setTimeout(() => setSaveStatus('✅ محفوظ للجميع'), 1200);
+    const isActive = window.FirebaseDB.isFirebaseActive && window.FirebaseDB.isFirebaseActive();
+    if (isActive) {
+      setSaveStatus('☁️ يتم الرفع…');
+      window.FirebaseDB.dbSaveCurriculum(curriculum,
+        function() {
+          setSaveStatus('✅ محفوظ للجميع ☁️');
+          showToast('✅ تم الحفظ — سيظهر لجميع الأجهزة');
+        },
+        function(err) {
+          setSaveStatus('⚠️ فشل الرفع');
+          showToast('⚠️ لم يُرفع إلى Firebase: ' + (err && err.message || err));
+          console.error('curriculum save error:', err);
+        }
+      );
+    } else {
+      window.FirebaseDB.dbSaveCurriculum(curriculum);
+      setSaveStatus('⚠️ محفوظ محلياً فقط (Firebase غير متصل)');
+      showToast('⚠️ Firebase غير متصل — الحفظ محلي فقط');
+    }
   } else {
     setSaveStatus('✅ تم الحفظ');
+    showToast('✅ تم الحفظ بنجاح');
   }
-
-  showToast('✅ تم الحفظ بنجاح');
 }
 
 function resetToDefault() {

@@ -135,7 +135,7 @@
   // ──────────────────────────────
   //  API المنهج
   // ──────────────────────────────
-  function dbSaveCurriculum(data) {
+  function dbSaveCurriculum(data, onSuccess, onError) {
     // نخزّن كـ JSON string لأن Firebase يحوّل المصفوفات إلى objects
     const jsonStr = JSON.stringify(data);
     try { localStorage.setItem('ibn_moshrf_curriculum', jsonStr); } catch(e) {}
@@ -143,10 +143,16 @@
     if (_useFirebase) {
       _ignoreNextCurriculumUpdate = true;
       firebase.database().ref('ibn_moshrf_curriculum_v2').set(jsonStr)
+        .then(function() {
+          if (onSuccess) onSuccess();
+        })
         .catch(function(err) {
           console.error('[FirebaseDB] خطأ في حفظ المنهج:', err);
           _ignoreNextCurriculumUpdate = false;
+          if (onError) onError(err);
         });
+    } else {
+      if (onSuccess) onSuccess();
     }
   }
 
