@@ -73,6 +73,7 @@ window.matchState={};function renderMatch(q,num,color){const rights=[...q.pairs.
         <span class="q-type-label">صل العمود الأول بالعمود الثاني</span>
       </div>
       <p class="q-main-text">${q.question}</p>
+      ${q.image ? `<div class="match-q-img-wrap"><img class="match-q-img"src="${q.image}"alt="صورة السؤال"></div>` : ''}
       <p class="match-hint">انقر على عنصر في العمود الأول ثم انقر على مقابله في الثاني</p>
       <div class="match-two-col">
         <div class="match-col">

@@ -371,12 +371,24 @@ oninput="updatePreview()"></div>`).join('')}
           <button class="tf-opt ${ans === false ? 'active-false' : ''}" id="tf-false"
                   onclick="selectTF(false)">❌ خطأ</button>
         </div>
-      </div>`;qbState.tfAnswer=ans;}else if(type==='match'){const pairs=existing?existing.pairs:[['',''],['',''],['','']];content.innerHTML=`
+      </div>`;qbState.tfAnswer=ans;}else if(type==='match'){const pairs=existing?existing.pairs:[['',''],['',''],['','']];const existingImg=existing?.image||null;qbState.matchImage=existingImg;content.innerHTML=`
       <div class="qb-field">
         <label class="qb-label">عنوان سؤال الوصل</label>
         <input class="qb-input" id="q-question" placeholder="مثال: صل كل مصطلح بتعريفه"
                value="${escHtml(existing?.question || '')}" oninput="updatePreview()">
       </div>
+
+      <!-- صورة السؤال (اختياري) -->
+      <div class="qb-field">
+        <label class="qb-label">صورة السؤال <span style="color:#94A3B8;font-weight:400">(اختياري)</span></label>
+        <div class="qb-img-upload-area" id="qb-img-area">
+          ${existingImg
+            ? `<div class="qb-img-preview"id="qb-img-preview"><img src="${existingImg}"alt="صورة السؤال"><button class="qb-img-remove"onclick="removeMatchImage()"title="حذف الصورة">✕</button></div>`
+            : `<div class="qb-img-placeholder"id="qb-img-placeholder"><label class="qb-img-upload-btn">🖼️ رفع صورة<input type="file"accept="image/*"style="display:none"onchange="handleMatchImageUpload(this)"></label><span style="color:#94A3B8;font-size:13px">أو أدخل رابط:</span><div style="display:flex;gap:8px;margin-top:6px"><input class="qb-input"id="qb-img-url"placeholder="https://..."style="flex:1"><button class="add-match-btn"onclick="setMatchImageFromURL()">+إضافة</button></div></div>`
+          }
+        </div>
+      </div>
+
       <div class="qb-field">
         <label class="qb-label">الأزواج</label>
         <div class="match-grid">
@@ -415,6 +427,26 @@ oninput="updatePreview()"></div>`).join('')}
 updatePreview();}
 function selectOption(idx){document.querySelectorAll('.option-row').forEach((row,i)=>{row.classList.toggle('selected',i===idx);});updatePreview();}
 function selectTF(val){qbState.tfAnswer=val;document.getElementById('tf-true').className=`tf-opt ${val === true  ? 'active-true'  : ''}`;document.getElementById('tf-false').className=`tf-opt ${val === false ? 'active-false' : ''}`;updatePreview();}
+function handleMatchImageUpload(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(e){qbState.matchImage=e.target.result;_renderMatchImagePreview(e.target.result);};reader.readAsDataURL(file);}
+function setMatchImageFromURL(){const url=(document.getElementById('qb-img-url')?.value||'').trim();if(!url){showToast('⚠️ أدخل رابط الصورة');return;}
+qbState.matchImage=url;_renderMatchImagePreview(url);}
+function removeMatchImage(){qbState.matchImage=null;const area=document.getElementById('qb-img-area');if(!area)return;area.innerHTML=`
+    <div class="qb-img-placeholder" id="qb-img-placeholder">
+      <label class="qb-img-upload-btn">
+        🖼️ رفع صورة
+        <input type="file" accept="image/*" style="display:none" onchange="handleMatchImageUpload(this)">
+      </label>
+      <span style="color:#94A3B8;font-size:13px">أو أدخل رابط:</span>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <input class="qb-input" id="qb-img-url" placeholder="https://..." style="flex:1">
+        <button class="add-match-btn" onclick="setMatchImageFromURL()">+ إضافة</button>
+      </div>
+    </div>`;}
+function _renderMatchImagePreview(src){const area=document.getElementById('qb-img-area');if(!area)return;area.innerHTML=`
+    <div class="qb-img-preview" id="qb-img-preview">
+      <img src="${src}" alt="صورة السؤال">
+      <button class="qb-img-remove" onclick="removeMatchImage()" title="حذف الصورة">✕</button>
+    </div>`;}
 function addMatchPair(){qbState.pairCount=(qbState.pairCount||0)+1;const i=qbState.pairCount-1;document.getElementById('match-col-a').insertAdjacentHTML('beforeend',`
     <div class="match-pair-row">
       <input class="match-input" id="ma-${i}" placeholder="العنصر ${i+1}" oninput="updatePreview()">
@@ -443,7 +475,7 @@ let q={type,question};if(type==='mcq'){const opts=[...document.querySelectorAll(
 q={...q,options:opts,answer};}else if(type==='tf'){if(qbState.tfAnswer===null||qbState.tfAnswer===undefined){showToast('⚠️ اختر صح أو خطأ');return;}
 q={...q,answer:qbState.tfAnswer};}else if(type==='match'){const pairs=[];const count=qbState.pairCount||0;for(let i=0;i<count;i++){const a=document.getElementById(`ma-${i}`)?.value?.trim();const b=document.getElementById(`mb-${i}`)?.value?.trim();if(a&&b)pairs.push([a,b]);}
 if(pairs.length<2){showToast('⚠️ أضف زوجين على الأقل');return;}
-q={...q,pairs};}else if(type==='fill'){const sentences=[];const count=qbState.fillCount||0;for(let i=0;i<count;i++){const before=document.getElementById(`fs-before-${i}`)?.value?.trim()||'';const answer=document.getElementById(`fs-answer-${i}`)?.value?.trim()||'';const after=document.getElementById(`fs-after-${i}`)?.value?.trim()||'';if(answer)sentences.push([before,answer,after]);}
+q={...q,pairs};if(qbState.matchImage)q.image=qbState.matchImage;}else if(type==='fill'){const sentences=[];const count=qbState.fillCount||0;for(let i=0;i<count;i++){const before=document.getElementById(`fs-before-${i}`)?.value?.trim()||'';const answer=document.getElementById(`fs-answer-${i}`)?.value?.trim()||'';const after=document.getElementById(`fs-after-${i}`)?.value?.trim()||'';if(answer)sentences.push([before,answer,after]);}
 if(!sentences.length){showToast('⚠️ أضف جملة واحدة على الأقل مع إجابة');return;}
 q={...q,sentences};}
 const{lesson}=getLesson(activeLesson);if(qbState.editIdx!==null&&qbState.editIdx!==undefined){lesson.questions[qbState.editIdx]=q;showToast('✅ تم تعديل السؤال');}else{lesson.questions.push(q);showToast('✅ تم إضافة السؤال');}
