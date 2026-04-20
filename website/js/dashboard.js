@@ -2,13 +2,24 @@ const STORAGE_KEY='ibn_moshrf_curriculum';const TEACHER_PIN_KEY='ibn_moshrf_teac
 function _isTeacherAuthed(){return sessionStorage.getItem(TEACHER_SESSION)==='1';}
 function showPinModal(){const overlay=document.getElementById('pin-overlay');if(!overlay)return;const stored=localStorage.getItem(TEACHER_PIN_KEY);const title=document.getElementById('pin-modal-title');const hint=document.getElementById('pin-modal-hint');if(!stored){if(title)title.textContent='إنشاء رمز الدخول للمعلم';if(hint)hint.textContent='أنشئ رمزاً سرياً (4 أحرف على الأقل) لحماية لوحة التحكم';}else{if(title)title.textContent='لوحة تحكم المعلم 🔒';if(hint)hint.textContent='أدخل رمز الدخول للمتابعة';}
 overlay.classList.remove('hidden');setTimeout(()=>document.getElementById('pin-input')?.focus(),100);}
-async function submitPin(){const pinEl=document.getElementById('pin-input');const errEl=document.getElementById('pin-error');const btn=document.getElementById('pin-submit-btn');const pin=(pinEl?.value||'').trim();if(pin.length<4){if(errEl){errEl.textContent='الرمز يجب أن يكون 4 أحرف على الأقل';errEl.classList.remove('hidden');}
+const PIN_LOCK_KEY='ibn_pin_lockout';const PIN_MAX_ATTEMPTS=5;const PIN_LOCKOUT_MS=10*60*1000;function _getPinLock(){try{return JSON.parse(sessionStorage.getItem(PIN_LOCK_KEY))||{attempts:0};}
+catch{return{attempts:0};}}
+function _savePinLock(d){sessionStorage.setItem(PIN_LOCK_KEY,JSON.stringify(d));}
+function _checkPinLock(){const d=_getPinLock();if(d.until&&Date.now()<d.until){const mins=Math.ceil((d.until-Date.now())/60000);return{locked:true,msg:`تم تجميد الوصول لمدة ${mins} دقيقة بعد محاولات خاطئة متكررة`};}
+return{locked:false,remaining:PIN_MAX_ATTEMPTS-(d.attempts||0)};}
+function _recordPinFail(){const d=_getPinLock();if(d.until&&Date.now()>=d.until){d.attempts=0;d.until=null;}
+d.attempts=(d.attempts||0)+1;if(d.attempts>=PIN_MAX_ATTEMPTS){d.until=Date.now()+PIN_LOCKOUT_MS;d.attempts=0;}
+_savePinLock(d);}
+function _clearPinLock(){sessionStorage.removeItem(PIN_LOCK_KEY);}
+async function submitPin(){const pinEl=document.getElementById('pin-input');const errEl=document.getElementById('pin-error');const btn=document.getElementById('pin-submit-btn');const pin=(pinEl?.value||'').trim();const lock=_checkPinLock();if(lock.locked){if(errEl){errEl.textContent=lock.msg;errEl.classList.remove('hidden');}
+if(pinEl)pinEl.disabled=true;if(btn)btn.disabled=true;return;}
+if(pin.length<4){if(errEl){errEl.textContent='الرمز يجب أن يكون 4 أحرف على الأقل';errEl.classList.remove('hidden');}
 return;}
-if(btn)btn.disabled=true;const hashed=await _hashPin(pin);if(btn)btn.disabled=false;const stored=localStorage.getItem(TEACHER_PIN_KEY);if(!stored){localStorage.setItem(TEACHER_PIN_KEY,hashed);document.getElementById('pin-overlay').classList.add('hidden');sessionStorage.setItem(TEACHER_SESSION,'1');_initDashboard();return;}
-if(hashed!==stored){if(errEl){errEl.textContent='رمز الدخول غير صحيح';errEl.classList.remove('hidden');}
+if(btn)btn.disabled=true;await new Promise(r=>setTimeout(r,600));const hashed=await _hashPin(pin);if(btn)btn.disabled=false;const stored=localStorage.getItem(TEACHER_PIN_KEY);if(!stored){localStorage.setItem(TEACHER_PIN_KEY,hashed);document.getElementById('pin-overlay').classList.add('hidden');sessionStorage.setItem(TEACHER_SESSION,'1');_clearPinLock();_initDashboard();return;}
+if(hashed!==stored){_recordPinFail();const lockNow=_checkPinLock();const msg=lockNow.locked?lockNow.msg:`رمز الدخول غير صحيح — ${lockNow.remaining} محاولة متبقية`;if(errEl){errEl.textContent=msg;errEl.classList.remove('hidden');}
 if(pinEl){pinEl.value='';pinEl.focus();}
 return;}
-document.getElementById('pin-overlay').classList.add('hidden');sessionStorage.setItem(TEACHER_SESSION,'1');_initDashboard();}
+_clearPinLock();document.getElementById('pin-overlay').classList.add('hidden');sessionStorage.setItem(TEACHER_SESSION,'1');_initDashboard();}
 function resetTeacherPin(){const conf=confirm('هل تريد إعادة تعيين رمز الدخول؟ ستحتاج لإنشاء رمز جديد في المرة القادمة.');if(!conf)return;localStorage.removeItem(TEACHER_PIN_KEY);sessionStorage.removeItem(TEACHER_SESSION);location.reload();}
 function init(){if(!_isTeacherAuthed()){showPinModal();return;}
 _initDashboard();}

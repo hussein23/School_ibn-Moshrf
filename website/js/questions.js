@@ -1,3 +1,4 @@
+function _esc(str){if(str===null||str===undefined)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 const MATCH_COLORS=['#FF6B35','#2196F3','#7C3AED','#10B981','#F59E0B','#EC4899'];function renderAllQuestions(questions,color){if(!questions||!Array.isArray(questions))return'';window.fillState=window.fillState||{};return questions.map((q,idx)=>renderQuestion(q,idx,color)).join('');}
 function renderQuestion(q,idx,color){const num=idx+1;switch(q.type){case'mcq':return renderMCQ(q,num,color);case'tf':return renderTF(q,num,color);case'match':return renderMatch(q,num,color);case'fill':return renderFill(q,num,color);default:return'';}}
 function renderMCQ(q,num,color){const letters=['أ','ب','ج','د'];const letterColors=['#FF6B35','#2196F3','#7C3AED','#10B981'];const opts=q.options.map((opt,i)=>`
@@ -5,7 +6,7 @@ function renderMCQ(q,num,color){const letters=['أ','ب','ج','د'];const letter
             onclick="selectMCQ(${num}, ${i})"
             style="--opt-color:${letterColors[i % 4]}">
       <span class="mcq-letter">${letters[i]}</span>
-      <span class="mcq-card-text">${opt}</span>
+      <span class="mcq-card-text">${_esc(opt)}</span>
       <span class="mcq-check" style="display:none">✓</span>
     </button>
   `).join('');return`
@@ -17,7 +18,7 @@ function renderMCQ(q,num,color){const letters=['أ','ب','ج','د'];const letter
         </div>
         <span class="q-type-label">اختر الإجابة الصحيحة</span>
       </div>
-      <p class="q-main-text">${q.question}</p>
+      <p class="q-main-text">${_esc(q.question)}</p>
       <div class="mcq-grid">${opts}</div>
       <div class="q-result hidden" id="qres-${num}"></div>
     </div>
@@ -32,7 +33,7 @@ function renderTF(q,num,color){return`
         </div>
         <span class="q-type-label">صح أم خطأ؟</span>
       </div>
-      <p class="q-main-text tf-statement">${q.question}</p>
+      <p class="q-main-text tf-statement">${_esc(q.question)}</p>
       <div class="tf-big-row">
         <button class="tf-big-card tf-big-true" id="tf-${num}-true"
                 onclick="selectTF(${num}, true)">
@@ -53,14 +54,14 @@ window.matchState={};function renderMatch(q,num,color){const rights=[...q.pairs.
     <div class="match-chip match-left" id="ml-${num}-${i}"
          data-idx="${i}" data-num="${num}"
          onclick="clickMatchLeft(${num}, ${i})">
-      <span class="match-chip-text">${p[0]}</span>
+      <span class="match-chip-text">${_esc(p[0])}</span>
       <span class="match-badge hidden" id="mlb-${num}-${i}"></span>
     </div>
   `).join('');const rightItems=rights.map((r,i)=>`
     <div class="match-chip match-right" id="mr-${num}-${i}"
-         data-val="${r}" data-idx="${i}" data-num="${num}"
-         onclick="clickMatchRight(${num}, ${i}, '${r.replace(/'/g,"\\'")}')">
-      <span class="match-chip-text">${r}</span>
+         data-val="${_esc(r)}" data-idx="${i}" data-num="${num}"
+         onclick="clickMatchRight(${num}, ${i}, '${_esc(r).replace(/'/g,"\\'")}')">
+      <span class="match-chip-text">${_esc(r)}</span>
       <span class="match-badge hidden" id="mrb-${num}-${i}"></span>
     </div>
   `).join('');const correctMap=JSON.stringify(q.pairs.map(p=>p[1])).replace(/"/g,'&quot;');return`
@@ -72,8 +73,8 @@ window.matchState={};function renderMatch(q,num,color){const rights=[...q.pairs.
         </div>
         <span class="q-type-label">صل العمود الأول بالعمود الثاني</span>
       </div>
-      <p class="q-main-text">${q.question}</p>
-      ${q.image ? `<div class="match-q-img-wrap"><img class="match-q-img"src="${q.image}"alt="صورة السؤال"></div>` : ''}
+      <p class="q-main-text">${_esc(q.question)}</p>
+      ${q.image ? `<div class="match-q-img-wrap"><img class="match-q-img"src="${_esc(q.image)}"alt="صورة السؤال"></div>` : ''}
       <p class="match-hint">انقر على عنصر في العمود الأول ثم انقر على مقابله في الثاني</p>
       <div class="match-two-col">
         <div class="match-col">
@@ -104,17 +105,17 @@ const lb=document.getElementById(`mlb-${num}-${li}`);if(lb){lb.textContent=count
 const card=document.getElementById(`qcard-${num}`);card.querySelectorAll('.match-right').forEach(el=>{if(el.dataset.val===val){el.style.borderColor=color;const rb=document.getElementById(`mrb-${num}-${el.dataset.idx}`);if(rb){rb.textContent=counter;rb.style.background=color;}}});counter++;});}
 window.fillState={};function renderFill(q,num,color){const answers=q.sentences.map(s=>s[1]);const words=[...answers].sort(()=>Math.random()-0.5);window.fillState[num]={selectedWord:null,selectedChipIdx:null,zones:{}};const wordChips=words.map((w,i)=>`
     <span class="fill-word-chip" id="fwc-${num}-${i}"
-          data-word="${w.replace(/"/g,'&quot;')}" data-num="${num}"
-          onclick="selectFillWord(${num}, ${i}, '${w.replace(/'/g,"\\'")}')">
-      ${w}
+          data-word="${_esc(w)}" data-num="${num}"
+          onclick="selectFillWord(${num}, ${i}, '${_esc(w).replace(/'/g,"\\'")}')">
+      ${_esc(w)}
     </span>
   `).join('');const sentences=q.sentences.map((s,i)=>`
     <div class="fill-sentence" id="fsentence-${num}-${i}">
-      ${s[0] ? `<span class="fill-text-part">${s[0]}</span>` : ''}
+      ${s[0] ? `<span class="fill-text-part">${_esc(s[0])}</span>` : ''}
       <span class="fill-drop-zone" id="fdz-${num}-${i}"
-            data-answer="${s[1].replace(/"/g,'&quot;')}" data-num="${num}" data-idx="${i}"
+            data-answer="${_esc(s[1])}" data-num="${num}" data-idx="${i}"
             onclick="placeFillWord(${num}, ${i})">اضغط هنا</span>
-      ${s[2] ? `<span class="fill-text-part">${s[2]}</span>` : ''}
+      ${s[2] ? `<span class="fill-text-part">${_esc(s[2])}</span>` : ''}
     </div>
   `).join('');return`
     <div class="q-wrap" id="qcard-${num}" data-type="fill" data-num="${num}">
@@ -125,7 +126,7 @@ window.fillState={};function renderFill(q,num,color){const answers=q.sentences.m
         </div>
         <span class="q-type-label">أملأ الفراغات</span>
       </div>
-      <p class="q-main-text">${q.question}</p>
+      <p class="q-main-text">${_esc(q.question)}</p>
       <div class="fill-word-bank" id="fwb-${num}">
         <div class="fill-bank-label">🗃️ بنك الكلمات — اضغط على كلمة ثم اضغط على الفراغ</div>
         <div class="fill-bank-words">${wordChips}</div>

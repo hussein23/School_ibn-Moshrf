@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "ibn_moshrf_students": {
+      ".read": true,
+      "$studentId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['id', 'username', 'grade', 'points'])"
+      }
+    },
+    "ibn_moshrf_curriculum_v2": {
+      ".read": true,
+      ".write": false
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
