@@ -187,71 +187,61 @@ function renderLessonEditor(){const{grade,sem,unit,lesson}=getLesson(activeLesso
       <span style="font-weight:700">${lesson.name}</span>
     </div>
 
-    <!-- الصف الأول: معلومات الدرس + الأهداف جنباً إلى جنب -->
-    <div class="editor-two-col">
-
-      <!-- اسم الدرس -->
-      <div class="editor-card">
-        <div class="editor-card-title">✏️ معلومات الدرس</div>
-        <div class="field-group">
-          <label class="field-label">اسم الدرس</label>
-          <input class="field-input" id="f-name" value="${escHtml(lesson.name)}">
-        </div>
-        <div class="field-group">
-          <label class="field-label">ملخص الدرس</label>
-          ${renderRichEditor(lesson.summary, 'f-summary', 120, 'اكتب ملخص الدرس هنا — يمكنك التنسيق بالخطوط والألوان...')}
-        </div>
+    <!-- اسم الدرس -->
+    <div class="editor-card">
+      <div class="editor-card-title">✏️ معلومات الدرس</div>
+      <div class="field-group">
+        <label class="field-label">اسم الدرس</label>
+        <input class="field-input" id="f-name" value="${escHtml(lesson.name)}">
       </div>
-
-      <!-- الأهداف -->
-      <div class="editor-card">
-        <div class="editor-card-title">🎯 أهداف الدرس</div>
-        <div class="list-editor" id="objectives-list">
-          ${lesson.objectives.map((obj, i) => `<div class="list-item-row"><textarea oninput="updateObjective(${i}, this.value)">${escHtml(obj)}</textarea><button class="list-item-del"onclick="deleteObjective(${i})">✕</button></div>`).join('')}
-        </div>
-        <button class="add-item-btn" onclick="addObjective()" style="margin-top:8px">+ إضافة هدف</button>
+      <div class="field-group">
+        <label class="field-label">ملخص الدرس</label>
+        ${renderRichEditor(lesson.summary, 'f-summary', 120, 'اكتب ملخص الدرس هنا — يمكنك التنسيق بالخطوط والألوان...')}
       </div>
-
     </div>
 
-    <!-- الصف الثاني: النقاط الرئيسية + الصور جنباً إلى جنب -->
-    <div class="editor-two-col">
-
-      <!-- النقاط الرئيسية -->
-      <div class="editor-card">
-        <div class="editor-card-title">
-          ⚡ النقاط الرئيسية
-          <div class="kp-layout-toggle">
-            <button class="kp-lt-btn ${(!lesson.kpLayout || lesson.kpLayout==='list') ? 'kp-lt-active':''}"
-                    title="قائمة عمودية" onclick="setKpLayout('list')">☰ قائمة</button>
-            <button class="kp-lt-btn ${lesson.kpLayout==='grid' ? 'kp-lt-active':''}"
-                    title="شبكة تلقائية — قصير جنباً طويل بعرض كامل" onclick="setKpLayout('grid')">⊞ شبكة</button>
-            <button class="kp-lt-btn ${lesson.kpLayout==='cards' ? 'kp-lt-active':''}"
-                    title="بطاقات ملونة" onclick="setKpLayout('cards')">🃏 بطاقات</button>
-          </div>
-        </div>
-        <div class="kp-list" id="keypoints-list">
-          ${lesson.keyPoints.map((kp, i) => renderKPItem(kp, i, lesson.keyPoints.length)).join('')}
-        </div>
-        <button class="add-item-btn" onclick="addKeyPoint()" style="margin-top:12px">+ إضافة نقطة</button>
+    <!-- الأهداف -->
+    <div class="editor-card">
+      <div class="editor-card-title">🎯 أهداف الدرس</div>
+      <div class="list-editor" id="objectives-list">
+        ${lesson.objectives.map((obj, i) => `<div class="list-item-row"><textarea oninput="updateObjective(${i}, this.value)">${escHtml(obj)}</textarea><button class="list-item-del"onclick="deleteObjective(${i})">✕</button></div>`).join('')}
       </div>
+      <button class="add-item-btn" onclick="addObjective()" style="margin-top:8px">+ إضافة هدف</button>
+    </div>
 
-      <!-- الصور -->
-      <div class="editor-card">
-        <div class="editor-card-title">🖼️ صور الدرس</div>
-        <div class="img-editor-grid" id="images-list">
-          ${(lesson.images || []).map((img, i) => renderImageItem(img, i)).join('')}
-        </div>
-        <div class="img-add-row">
-          <label class="img-upload-btn" title="رفع صورة من الجهاز">
-            📁 رفع صورة
-            <input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this, -1)">
-          </label>
-          <input class="field-input img-url-input" id="img-url-input" placeholder="أو أدخل رابط الصورة (URL)">
-          <button class="img-url-btn" onclick="addImageFromURL()">+ إضافة</button>
+    <!-- النقاط الرئيسية -->
+    <div class="editor-card">
+      <div class="editor-card-title">
+        ⚡ النقاط الرئيسية
+        <div class="kp-layout-toggle">
+          <button class="kp-lt-btn ${(!lesson.kpLayout || lesson.kpLayout==='list') ? 'kp-lt-active':''}"
+                  title="قائمة عمودية" onclick="setKpLayout('list')">☰ قائمة</button>
+          <button class="kp-lt-btn ${lesson.kpLayout==='grid' ? 'kp-lt-active':''}"
+                  title="شبكة تلقائية — قصير جنباً طويل بعرض كامل" onclick="setKpLayout('grid')">⊞ شبكة</button>
+          <button class="kp-lt-btn ${lesson.kpLayout==='cards' ? 'kp-lt-active':''}"
+                  title="بطاقات ملونة" onclick="setKpLayout('cards')">🃏 بطاقات</button>
         </div>
       </div>
+      <div class="kp-list" id="keypoints-list">
+        ${lesson.keyPoints.map((kp, i) => renderKPItem(kp, i, lesson.keyPoints.length)).join('')}
+      </div>
+      <button class="add-item-btn" onclick="addKeyPoint()" style="margin-top:12px">+ إضافة نقطة</button>
+    </div>
 
+    <!-- الصور -->
+    <div class="editor-card">
+      <div class="editor-card-title">🖼️ صور الدرس</div>
+      <div class="img-editor-grid" id="images-list">
+        ${(lesson.images || []).map((img, i) => renderImageItem(img, i)).join('')}
+      </div>
+      <div class="img-add-row">
+        <label class="img-upload-btn" title="رفع صورة من الجهاز">
+          📁 رفع صورة
+          <input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this, -1)">
+        </label>
+        <input class="field-input img-url-input" id="img-url-input" placeholder="أو أدخل رابط الصورة (URL)">
+        <button class="img-url-btn" onclick="addImageFromURL()">+ إضافة</button>
+      </div>
     </div>
 
     <!-- الأقسام المخصصة -->
