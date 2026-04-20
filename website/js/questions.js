@@ -147,30 +147,44 @@ if(el.dataset.val===correctVal&&!ok){el.classList.add('match-show-correct');}});
 if(isCorrect){correct++;celebrateCorrectAnswer();}
 card.classList.add(isCorrect?'q-answered-correct':'q-answered-wrong');});setTimeout(()=>showFinalResult(correct,questions.length),800);}
 function showResult(el,isCorrect,msg){el.className=`q-result ${isCorrect ? 'q-result-ok' : 'q-result-err'}`;el.textContent=msg;}
-function showFinalResult(correct,total){const pct=Math.round((correct/total)*100);const cls=pct===100?'res-perfect':pct>=80?'res-great':pct>=60?'res-good':'res-try';if(pct===100)celebrateCorrectAnswer();let pointsHtml='';if(window.StudentAuth&&window.StudentAuth.getCurrent()){const lessonId=window._currentLessonId||null;const lessonGrade=window._currentLessonGrade||null;const result=StudentAuth.awardPoints(correct,total,lessonId,lessonGrade);if(result){if(result.wrongGrade){pointsHtml=`<div class="res-points-earned res-wrong-grade">
+function showFinalResult(correct,total){const pct=Math.round((correct/total)*100);const cls=pct===100?'res-perfect':pct>=80?'res-great':pct>=60?'res-good':'res-try';if(pct===100)celebrateCorrectAnswer();let emoji=pct===100?'🏆':pct>=80?'⭐':pct>=60?'👍':'📖';let msg=pct===100?'مثالي! علامة كاملة!':pct>=80?'ممتاز جداً! أداء رائع!':pct>=60?'جيد! راجع الدرس وأعد المحاولة':'راجع الدرس بعناية وحاول مجدداً';let pointsHtml='';if(window.StudentAuth&&window.StudentAuth.getCurrent()){const lessonId=window._currentLessonId||null;const lessonGrade=window._currentLessonGrade||null;const result=StudentAuth.awardPoints(correct,total,lessonId,lessonGrade);if(result){if(result.wrongGrade){pointsHtml=`<div class="res-wrong-grade-card">
           ⚠️ لا تُحسب نقاط — هذا الدرس من صف مختلف عن صفّك
-        </div>`;}else if(result.earned>0){const motiv=StudentAuth._getMotivation(pct,result.totalPoints,result.isRetry);pointsHtml=`<div class="res-points-earned res-pts-show">
-          <div class="rpe-stars">${motiv.emoji}</div>
-          <div class="rpe-earned">+${result.earned} نقطة${result.isRetry ? ' <span class="rpe-retry">(إعادة — نصف النقاط)</span>' : ''}</div>
-          <div class="rpe-total">مجموعك الآن: <strong>${result.totalPoints}</strong> نقطة</div>
-          <div class="rpe-motiv">${motiv.msg}</div>
-        </div>`;StudentAuth.showPointsToast(result.earned,result.totalPoints,result.isRetry);}}}
-const motiv0=window.StudentAuth&&window.StudentAuth._getMotivation?StudentAuth._getMotivation(pct,0,false):{emoji:pct===100?'🏆':pct>=80?'⭐':pct>=60?'👍':'💪',msg:pct===100?'ممتاز! العلامة الكاملة!':pct>=80?'جيد جداً! أداء رائع':pct>=60?'جيد! راجع وأعد المحاولة':'راجع الدرس وحاول مجدداً'};const modal=document.getElementById('result-modal');document.getElementById('result-content').innerHTML=`
-    <div class="res-box ${cls}">
-      <div class="res-emoji">${motiv0.emoji}</div>
-      <div class="res-fraction">${correct} / ${total}</div>
-      <div class="res-pct-wrap">
-        <div class="res-pct-bar" style="width:${pct}%"></div>
+        </div>`;}else if(result.earned>0){const motiv=StudentAuth._getMotivation(pct,result.totalPoints,result.isRetry);emoji=motiv.emoji;pointsHtml=`
+          <div class="res-pts-card">
+            <div class="res-pts-emoji">${motiv.emoji}</div>
+            <div class="res-pts-earned-big">+${result.earned} نقطة${result.isRetry ? ' <span style="font-size:13px;font-weight:400;opacity:.7">(إعادة)</span>' : ''}</div>
+            <div class="res-pts-total-line">مجموعك الآن: <strong>${result.totalPoints}</strong> نقطة</div>
+            <div class="res-pts-msg">${motiv.msg}</div>
+          </div>`;StudentAuth.showPointsToast(result.earned,result.totalPoints,result.isRetry);}else if(!result.wrongGrade){pointsHtml=`<div class="res-wrong-grade-card" style="border-color:#94A3B8;background:#F8FAFC;color:#64748B">
+          ⟳ هذا الدرس محلول سابقاً — لا نقاط جديدة
+        </div>`;}}}
+document.getElementById('result-content').innerHTML=`
+    <div class="res-card ${cls}">
+
+      <!-- ── Header ملوّن ── -->
+      <div class="res-card-header">
+        <span class="res-big-emoji">${emoji}</span>
+        <div class="res-pct-big">${pct}%</div>
+        <div class="res-score-sub">${correct} صحيح من ${total} سؤال</div>
       </div>
-      <div class="res-pct-label">${pct}%</div>
-      <p class="res-msg">${motiv0.msg}</p>
-      ${pointsHtml}
-      <div class="res-btns">
-        <button class="res-btn-retry" onclick="retryQuestions()">🔄 أعد المحاولة</button>
-        <button class="res-btn-close" onclick="closeResult()">✕ إغلاق</button>
+
+      <!-- ── جسم البطاقة ── -->
+      <div class="res-card-body">
+        <div class="res-bar-wrap">
+          <div class="res-bar-fill" id="res-bar-inner"></div>
+        </div>
+        <p class="res-msg-main">${msg}</p>
+        ${pointsHtml}
       </div>
+
+      <!-- ── الأزرار ── -->
+      <div class="res-btns-new">
+        <button class="res-btn-retry-new" onclick="retryQuestions()">🔄 أعد المحاولة</button>
+        <button class="res-btn-close-new" onclick="closeResult()">✕ إغلاق</button>
+      </div>
+
     </div>
-  `;modal.classList.remove('hidden');}
+  `;const modal=document.getElementById('result-modal');modal.classList.remove('hidden');requestAnimationFrame(()=>{requestAnimationFrame(()=>{const bar=document.getElementById('res-bar-inner');if(bar)bar.style.width=pct+'%';});});window.scrollTo({top:0,behavior:'smooth'});}
 function closeResult(){document.getElementById('result-modal').classList.add('hidden');}
 function retryQuestions(){closeResult();window.matchState={};document.querySelectorAll('.q-wrap').forEach(card=>{card.classList.remove('answered','q-answered-correct','q-answered-wrong');delete card.dataset.userAnswer;card.querySelectorAll('.q-result').forEach(r=>{r.className='q-result hidden';r.textContent='';});card.querySelectorAll('.mcq-card').forEach(c=>{c.classList.remove('mcq-selected','mcq-correct','mcq-wrong');const chk=c.querySelector('.mcq-check');if(chk){chk.style.display='none';chk.textContent='✓';chk.style.background='';}});card.querySelectorAll('.tf-big-card').forEach(b=>b.classList.remove('tf-active-true','tf-active-false','tf-result-correct','tf-result-wrong'));const num=parseInt(card.dataset.num);if(num){window.matchState[num]={selected:null,connections:{}};card.querySelectorAll('.match-chip').forEach(c=>{c.classList.remove('match-selecting','match-connected','match-result-correct','match-result-wrong','match-show-correct');c.style.borderColor='';});card.querySelectorAll('.match-badge').forEach(b=>{b.classList.add('hidden');b.textContent='';b.style.background='';});card.querySelectorAll('.match-arrow-line').forEach(a=>{a.style.color='';a.style.fontWeight='';});}
 if(card.dataset.type==='fill'&&num){window.fillState[num]={selectedWord:null,selectedChipIdx:null,zones:{}};card.querySelectorAll('.fill-drop-zone').forEach(z=>{z.textContent='اضغط هنا';z.classList.remove('fill-zone-filled','fill-zone-correct','fill-zone-wrong');});card.querySelectorAll('.fill-word-chip').forEach(c=>{c.classList.remove('fill-chip-used','fill-chip-selected');});card.querySelectorAll('.fill-sentence').forEach(s=>{s.classList.remove('fill-sentence-correct','fill-sentence-wrong');});}});setTimeout(()=>initDragDrop(),100);}
