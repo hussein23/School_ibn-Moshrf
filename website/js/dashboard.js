@@ -76,32 +76,13 @@ function renderStats(){const grid=document.getElementById('stats-grid');let tota
     </div>`);grid.innerHTML=cards.join('');}
 function showOverview(){document.getElementById('overview-panel').classList.remove('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.add('hidden');}
 function showStudentPanel(){document.getElementById('overview-panel').classList.add('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.remove('hidden');renderStudentPanel();}
-let _spFilter={grade:'all',category:'all',sort:'points'};function renderStudentPanel(){const panel=document.getElementById('student-panel');if(!window.StudentAuth)return;const gradeNames={grade4:'الصف الرابع',grade5:'الصف الخامس',grade6:'الصف السادس'};const gradeColors={grade4:'#FF6B35',grade5:'#2196F3',grade6:'#7C3AED'};const gradeIcons={grade4:'🟠',grade5:'🔵',grade6:'🟣'};const catLabels={excellent:'🌟 متفوق',good:'👍 جيد',normal:'📘 عادي',needs_help:'⚠️ يحتاج دعم'};const catColors={excellent:'#16a34a',good:'#2196F3',normal:'#64748b',needs_help:'#ef4444'};let all=StudentAuth.getAllStudents();all.forEach(st=>{const pts=st.points||0;const lc=Object.keys(st.lessons||{}).length;if(!st.category||st.category==='normal'){if(pts>=200||lc>=10)st.category='excellent';else if(pts>=100||lc>=5)st.category='good';else if(pts===0&&lc===0)st.category='needs_help';else st.category='normal';}});let students=all.filter(st=>{if(_spFilter.grade!=='all'&&st.grade!==_spFilter.grade)return false;if(_spFilter.category!=='all'&&(st.category||'normal')!==_spFilter.category)return false;return true;});if(_spFilter.sort==='points')students.sort((a,b)=>(b.points||0)-(a.points||0));if(_spFilter.sort==='visits')students.sort((a,b)=>(b.visitCount||0)-(a.visitCount||0));if(_spFilter.sort==='attempts')students.sort((a,b)=>(b.attemptCount||0)-(a.attemptCount||0));if(_spFilter.sort==='lessons')students.sort((a,b)=>Object.keys(b.lessons||{}).length-Object.keys(a.lessons||{}).length);if(_spFilter.sort==='name')students.sort((a,b)=>a.username.localeCompare(b.username,'ar'));const totalPts=all.reduce((s,st)=>s+(st.points||0),0);const countByGrade={grade4:0,grade5:0,grade6:0};all.forEach(st=>{if(countByGrade[st.grade]!==undefined)countByGrade[st.grade]++;});panel.innerHTML=`
+function renderStudentPanel(){const panel=document.getElementById('student-panel');const students=window.StudentAuth?StudentAuth.getAllStudents():[];const gradeNames={grade4:'الصف الرابع',grade5:'الصف الخامس',grade6:'الصف السادس'};const gradeColors={grade4:'#FF6B35',grade5:'#2196F3',grade6:'#7C3AED'};const gradeIcons={grade4:'🟠',grade5:'🔵',grade6:'🟣'};const totalPts=students.reduce((s,st)=>s+(st.points||0),0);panel.innerHTML=`
     <div class="sp-dash-header">
       <div>
         <h2 class="sp-dash-title">👥 إدارة الطلاب</h2>
-        <p class="sp-dash-sub">${all.length} طالب · إجمالي النقاط: ${totalPts}</p>
+        <p class="sp-dash-sub">${students.length} طالب مسجّل · إجمالي النقاط: ${totalPts}</p>
       </div>
       <button class="back-overview-btn" onclick="showOverview()">← رجوع</button>
-    </div>
-
-    <!-- إحصائيات سريعة -->
-    <div class="sp-stats-row">
-      <div class="sp-stat-chip" style="border-color:#FF6B35">
-        <span style="color:#FF6B35">🟠</span> ${countByGrade.grade4} رابع
-      </div>
-      <div class="sp-stat-chip" style="border-color:#2196F3">
-        <span style="color:#2196F3">🔵</span> ${countByGrade.grade5} خامس
-      </div>
-      <div class="sp-stat-chip" style="border-color:#7C3AED">
-        <span style="color:#7C3AED">🟣</span> ${countByGrade.grade6} سادس
-      </div>
-      <div class="sp-stat-chip" style="border-color:#16a34a">
-        🌟 ${all.filter(s=>s.category==='excellent').length} متفوق
-      </div>
-      <div class="sp-stat-chip" style="border-color:#ef4444">
-        ⚠️ ${all.filter(s=>s.category==='needs_help').length} يحتاج دعم
-      </div>
     </div>
 
     <!-- إضافة طالب جديد -->
@@ -137,6 +118,7 @@ let _spFilter={grade:'all',category:'all',sort:'points'};function renderStudentP
       <div class="editor-card-title">📊 رفع قائمة طلاب من Excel / CSV</div>
       <div class="sp-excel-info">
         <p>ارفع ملف Excel أو CSV يحتوي على أعمدة: <strong>الاسم</strong> — <strong>الصف</strong> — <strong>كلمة المرور</strong></p>
+        <p style="margin-top:6px;color:#64748b;font-size:13px">الصف يُكتب: 4 أو 5 أو 6 (أو grade4 / grade5 / grade6)</p>
       </div>
       <div class="sp-excel-actions">
         <button class="sp-excel-template-btn" onclick="downloadExcelTemplate()">⬇ تحميل نموذج Excel</button>
@@ -149,80 +131,30 @@ let _spFilter={grade:'all',category:'all',sort:'points'};function renderStudentP
       <div id="sp-excel-error" class="sm-error hidden" style="margin-top:8px"></div>
     </div>
 
-    <!-- فلاتر وترتيب -->
+    <!-- قائمة الطلاب -->
     <div class="editor-card">
-      <div class="editor-card-title">🔍 تصفية وترتيب الطلاب</div>
-      <div class="sp-filters-row">
-        <div class="sp-filter-group">
-          <label class="field-label">الصف</label>
-          <select class="field-input sp-filter-sel" onchange="_spFilter.grade=this.value;renderStudentPanel()">
-            <option value="all" ${_spFilter.grade==='all'?'selected':''}>كل الصفوف</option>
-            <option value="grade4" ${_spFilter.grade==='grade4'?'selected':''}>🟠 الرابع</option>
-            <option value="grade5" ${_spFilter.grade==='grade5'?'selected':''}>🔵 الخامس</option>
-            <option value="grade6" ${_spFilter.grade==='grade6'?'selected':''}>🟣 السادس</option>
-          </select>
-        </div>
-        <div class="sp-filter-group">
-          <label class="field-label">التصنيف</label>
-          <select class="field-input sp-filter-sel" onchange="_spFilter.category=this.value;renderStudentPanel()">
-            <option value="all"       ${_spFilter.category==='all'?'selected':''}>كل التصنيفات</option>
-            <option value="excellent" ${_spFilter.category==='excellent'?'selected':''}>🌟 متفوق</option>
-            <option value="good"      ${_spFilter.category==='good'?'selected':''}>👍 جيد</option>
-            <option value="normal"    ${_spFilter.category==='normal'?'selected':''}>📘 عادي</option>
-            <option value="needs_help"${_spFilter.category==='needs_help'?'selected':''}>⚠️ يحتاج دعم</option>
-          </select>
-        </div>
-        <div class="sp-filter-group">
-          <label class="field-label">الترتيب حسب</label>
-          <select class="field-input sp-filter-sel" onchange="_spFilter.sort=this.value;renderStudentPanel()">
-            <option value="points"   ${_spFilter.sort==='points'?'selected':''}>⭐ النقاط</option>
-            <option value="lessons"  ${_spFilter.sort==='lessons'?'selected':''}>📚 الدروس</option>
-            <option value="visits"   ${_spFilter.sort==='visits'?'selected':''}>👁 الزيارات</option>
-            <option value="attempts" ${_spFilter.sort==='attempts'?'selected':''}>🎯 المحاولات</option>
-            <option value="name"     ${_spFilter.sort==='name'?'selected':''}>أ-ي الاسم</option>
-          </select>
-        </div>
-        <div class="sp-filter-group" style="padding-top:24px">
-          <button class="sp-reset-filter-btn" onclick="_spFilter={grade:'all',category:'all',sort:'points'};renderStudentPanel()">↺ إعادة تعيين</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- جدول الطلاب -->
-    <div class="editor-card">
-      <div class="editor-card-title">🏆 قائمة الطلاب
-        <span style="font-size:13px;font-weight:400;color:var(--text-mid);margin-right:8px">${students.length} نتيجة</span>
-      </div>
+      <div class="editor-card-title">🏆 لوحة الشرف — قائمة الطلاب</div>
       ${students.length === 0
-        ? `<div class="sp-empty">لا يوجد طلاب بهذه الفلاتر</div>`
-        : `<div class="sp-table-wrap"><table class="sp-table"><thead><tr><th>#</th><th>الاسم</th><th>الصف</th><th>التصنيف</th><th>النقاط ⭐</th><th>دروس محلولة 📚</th><th>زيارات 👁</th><th>محاولات 🎯</th><th>آخر زيارة</th><th>الإجراءات</th></tr></thead><tbody>${students.map((st,i)=>{const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;const gc=gradeColors[st.grade]||'#64748B';const gi=gradeIcons[st.grade]||'📚';const gn=gradeNames[st.grade]||st.grade;const lc=Object.keys(st.lessons||{}).length;const cat=st.category||'normal';const catLabel=catLabels[cat]||cat;const catColor=catColors[cat]||'#64748b';return`
-              <tr>
-                <td class="sp-rank">${medal}</td>
-                <td class="sp-student-name">${escHtml(st.username)}</td>
-                <td><span class="sp-grade-badge" style="background:${gc}20;color:${gc}">${gi} ${gn}</span></td>
-                <td>
-                  <select class="sp-cat-sel" style="color:${catColor}"
-                    onchange="setStudentCategory('${st.id}', this.value)">
-                    <option value="excellent" ${cat==='excellent'?'selected':''}>🌟 متفوق</option>
-                    <option value="good"      ${cat==='good'?'selected':''}>👍 جيد</option>
-                    <option value="normal"    ${cat==='normal'?'selected':''}>📘 عادي</option>
-                    <option value="needs_help"${cat==='needs_help'?'selected':''}>⚠️ يحتاج دعم</option>
-                  </select>
-                </td>
-                <td class="sp-pts-cell"><strong>${st.points || 0}</strong></td>
-                <td class="sp-lc-cell">${lc}</td>
-                <td class="sp-visits-cell">${st.visitCount || 0}</td>
-                <td class="sp-attempts-cell">${st.attemptCount || 0}</td>
-                <td class="sp-date-cell">${st.lastVisit || '—'}</td>
-                <td class="sp-actions-cell">
-                  <button class="sp-reset-btn" onclick="resetStudentFromDash('${st.id}')" title="صفر النقاط">🔄</button>
-                  <button class="sp-del-btn"   onclick="deleteStudentFromDash('${st.id}')" title="حذف">🗑</button>
-                </td>
-              </tr>`;}).join('')}</tbody></table></div>`
+        ? `<div class="sp-empty">لا يوجد طلاب مسجّلون بعد — أضف طالباً الآن</div>`
+        : `<div class="sp-table-wrap"><table class="sp-table"><thead><tr><th>#</th><th>الاسم</th><th>الصف</th><th>كلمة المرور</th><th>النقاط ⭐</th><th>دروس محلولة</th><th>الإجراءات</th></tr></thead><tbody>${students.map((st,i)=>{const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;const gc=gradeColors[st.grade]||'#64748B';const gi=gradeIcons[st.grade]||'📚';const gn=gradeNames[st.grade]||st.grade;const lc=Object.keys(st.lessons||{}).length;return`
+                    <tr>
+                      <td class="sp-rank">${medal}</td>
+                      <td class="sp-student-name">${escHtml(st.username)}</td>
+                      <td><span class="sp-grade-badge" style="background:${gc}20;color:${gc}">${gi} ${gn}</span></td>
+                      <td class="sp-pass-cell">
+                        <span class="sp-pass-dots" id="pd-${st.id}">••••</span>
+                        <button class="sp-show-pass" onclick="togglePass('${escHtml(st.id)}')" title="كلمة المرور مشفرة">🔒</button>
+                      </td>
+                      <td class="sp-pts-cell">${st.points || 0}</td>
+                      <td class="sp-lc-cell">${lc}</td>
+                      <td class="sp-actions-cell">
+                        <button class="sp-reset-btn" onclick="resetStudentFromDash('${st.id}')" title="صفر النقاط">🔄 صفر</button>
+                        <button class="sp-del-btn"   onclick="deleteStudentFromDash('${st.id}')" title="حذف الطالب">🗑</button>
+                      </td>
+                    </tr>`;}).join('')}</tbody></table></div>`
       }
     </div>
   `;}
-function setStudentCategory(id,cat){if(!window.StudentAuth)return;StudentAuth.updateStudent(id,{category:cat});showToast('✅ تم تحديث تصنيف الطالب');}
 async function addStudentFromDash(){const name=document.getElementById('sp-new-name').value;const grade=document.getElementById('sp-new-grade').value;const pass=document.getElementById('sp-new-pass').value;const err=document.getElementById('sp-add-error');const btn=document.querySelector('.sp-add-btn');if(!window.StudentAuth)return;if(btn)btn.disabled=true;const result=await StudentAuth.addStudent(name,grade,pass);if(btn)btn.disabled=false;if(!result.ok){err.textContent=result.msg;err.classList.remove('hidden');return;}
 err.classList.add('hidden');document.getElementById('sp-new-name').value='';document.getElementById('sp-new-grade').value='';document.getElementById('sp-new-pass').value='';showToast(`✅ تم إضافة الطالب: ${result.student.username}`);renderStudentPanel();}
 function deleteStudentFromDash(id){showConfirm('سيتم حذف الطالب ونقاطه نهائياً. هل أنت متأكد؟',()=>{StudentAuth.deleteStudent(id);showToast('🗑 تم حذف الطالب');renderStudentPanel();});}
@@ -255,61 +187,71 @@ function renderLessonEditor(){const{grade,sem,unit,lesson}=getLesson(activeLesso
       <span style="font-weight:700">${lesson.name}</span>
     </div>
 
-    <!-- اسم الدرس -->
-    <div class="editor-card">
-      <div class="editor-card-title">✏️ معلومات الدرس</div>
-      <div class="field-group">
-        <label class="field-label">اسم الدرس</label>
-        <input class="field-input" id="f-name" value="${escHtml(lesson.name)}">
-      </div>
-      <div class="field-group">
-        <label class="field-label">ملخص الدرس</label>
-        ${renderRichEditor(lesson.summary, 'f-summary', 120, 'اكتب ملخص الدرس هنا — يمكنك التنسيق بالخطوط والألوان...')}
-      </div>
-    </div>
+    <!-- الصف الأول: معلومات الدرس + الأهداف جنباً إلى جنب -->
+    <div class="editor-two-col">
 
-    <!-- الأهداف -->
-    <div class="editor-card">
-      <div class="editor-card-title">🎯 أهداف الدرس</div>
-      <div class="list-editor" id="objectives-list">
-        ${lesson.objectives.map((obj, i) => `<div class="list-item-row"><textarea oninput="updateObjective(${i}, this.value)">${escHtml(obj)}</textarea><button class="list-item-del"onclick="deleteObjective(${i})">✕</button></div>`).join('')}
-      </div>
-      <button class="add-item-btn" onclick="addObjective()" style="margin-top:8px">+ إضافة هدف</button>
-    </div>
-
-    <!-- النقاط الرئيسية -->
-    <div class="editor-card">
-      <div class="editor-card-title">
-        ⚡ النقاط الرئيسية
-        <div class="kp-layout-toggle">
-          <button class="kp-lt-btn ${(!lesson.kpLayout || lesson.kpLayout==='list') ? 'kp-lt-active':''}"
-                  title="قائمة عمودية" onclick="setKpLayout('list')">☰ قائمة</button>
-          <button class="kp-lt-btn ${lesson.kpLayout==='grid' ? 'kp-lt-active':''}"
-                  title="شبكة تلقائية — قصير جنباً طويل بعرض كامل" onclick="setKpLayout('grid')">⊞ شبكة</button>
-          <button class="kp-lt-btn ${lesson.kpLayout==='cards' ? 'kp-lt-active':''}"
-                  title="بطاقات ملونة" onclick="setKpLayout('cards')">🃏 بطاقات</button>
+      <!-- اسم الدرس -->
+      <div class="editor-card">
+        <div class="editor-card-title">✏️ معلومات الدرس</div>
+        <div class="field-group">
+          <label class="field-label">اسم الدرس</label>
+          <input class="field-input" id="f-name" value="${escHtml(lesson.name)}">
+        </div>
+        <div class="field-group">
+          <label class="field-label">ملخص الدرس</label>
+          ${renderRichEditor(lesson.summary, 'f-summary', 120, 'اكتب ملخص الدرس هنا — يمكنك التنسيق بالخطوط والألوان...')}
         </div>
       </div>
-      <div class="kp-list" id="keypoints-list">
-        ${lesson.keyPoints.map((kp, i) => renderKPItem(kp, i, lesson.keyPoints.length)).join('')}
+
+      <!-- الأهداف -->
+      <div class="editor-card">
+        <div class="editor-card-title">🎯 أهداف الدرس</div>
+        <div class="list-editor" id="objectives-list">
+          ${lesson.objectives.map((obj, i) => `<div class="list-item-row"><textarea oninput="updateObjective(${i}, this.value)">${escHtml(obj)}</textarea><button class="list-item-del"onclick="deleteObjective(${i})">✕</button></div>`).join('')}
+        </div>
+        <button class="add-item-btn" onclick="addObjective()" style="margin-top:8px">+ إضافة هدف</button>
       </div>
-      <button class="add-item-btn" onclick="addKeyPoint()" style="margin-top:12px">+ إضافة نقطة</button>
+
     </div>
 
-    <!-- الصور -->
-    <div class="editor-card">
-      <div class="editor-card-title">🖼️ صور الدرس</div>
-      <div class="img-editor-grid" id="images-list">
-        ${(lesson.images || []).map((img, i) => renderImageItem(img, i)).join('')}
+    <!-- الصف الثاني: النقاط الرئيسية + الصور جنباً إلى جنب -->
+    <div class="editor-two-col">
+
+      <!-- النقاط الرئيسية -->
+      <div class="editor-card">
+        <div class="editor-card-title">
+          ⚡ النقاط الرئيسية
+          <div class="kp-layout-toggle">
+            <button class="kp-lt-btn ${(!lesson.kpLayout || lesson.kpLayout==='list') ? 'kp-lt-active':''}"
+                    title="قائمة عمودية" onclick="setKpLayout('list')">☰ قائمة</button>
+            <button class="kp-lt-btn ${lesson.kpLayout==='grid' ? 'kp-lt-active':''}"
+                    title="شبكة تلقائية — قصير جنباً طويل بعرض كامل" onclick="setKpLayout('grid')">⊞ شبكة</button>
+            <button class="kp-lt-btn ${lesson.kpLayout==='cards' ? 'kp-lt-active':''}"
+                    title="بطاقات ملونة" onclick="setKpLayout('cards')">🃏 بطاقات</button>
+          </div>
+        </div>
+        <div class="kp-list" id="keypoints-list">
+          ${lesson.keyPoints.map((kp, i) => renderKPItem(kp, i, lesson.keyPoints.length)).join('')}
+        </div>
+        <button class="add-item-btn" onclick="addKeyPoint()" style="margin-top:12px">+ إضافة نقطة</button>
       </div>
-      <div class="img-add-row">
-        <label class="img-upload-btn" title="رفع صورة من الجهاز">
-          📁 رفع صورة
-          <input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this, -1)">
-        </label>
-        <input class="field-input img-url-input" id="img-url-input" placeholder="أو أدخل رابط الصورة (URL)">
-        <button class="img-url-btn" onclick="addImageFromURL()">+ إضافة</button>
+
+      <!-- الصور -->
+      <div class="editor-card">
+        <div class="editor-card-title">🖼️ صور الدرس</div>
+        <div class="img-editor-grid" id="images-list">
+          ${(lesson.images || []).map((img, i) => renderImageItem(img, i)).join('')}
+        </div>
+        <div class="img-add-row">
+          <label class="img-upload-btn" title="رفع صورة من الجهاز">
+            📁 رفع صورة
+            <input type="file" accept="image/*" style="display:none" onchange="handleImageFile(this, -1)">
+          </label>
+          <input class="field-input img-url-input" id="img-url-input" placeholder="أو أدخل رابط الصورة (URL)">
+          <button class="img-url-btn" onclick="addImageFromURL()">+ إضافة</button>
+        </div>
       </div>
+
     </div>
 
     <!-- الأقسام المخصصة -->
