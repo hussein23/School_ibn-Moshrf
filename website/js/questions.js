@@ -147,16 +147,24 @@ if(el.dataset.val===correctVal&&!ok){el.classList.add('match-show-correct');}});
 if(isCorrect){correct++;celebrateCorrectAnswer();}
 card.classList.add(isCorrect?'q-answered-correct':'q-answered-wrong');});setTimeout(()=>showFinalResult(correct,questions.length),800);}
 function showResult(el,isCorrect,msg){el.className=`q-result ${isCorrect ? 'q-result-ok' : 'q-result-err'}`;el.textContent=msg;}
-function showFinalResult(correct,total){const pct=Math.round((correct/total)*100);const data=pct===100?{emoji:'🏆',msg:'ممتاز! العلامة الكاملة!',cls:'res-perfect'}:pct>=80?{emoji:'⭐',msg:'جيد جداً! أداء رائع',cls:'res-great'}:pct>=60?{emoji:'👍',msg:'جيد! راجع وأعد المحاولة',cls:'res-good'}:{emoji:'💪',msg:'راجع الدرس وحاول مجدداً',cls:'res-try'};if(pct===100)celebrateCorrectAnswer();const modal=document.getElementById('result-modal');document.getElementById('result-content').innerHTML=`
-    <div class="res-box ${data.cls}">
-      <div class="res-emoji">${data.emoji}</div>
+function showFinalResult(correct,total){const pct=Math.round((correct/total)*100);const cls=pct===100?'res-perfect':pct>=80?'res-great':pct>=60?'res-good':'res-try';if(pct===100)celebrateCorrectAnswer();let pointsHtml='';if(window.StudentAuth&&window.StudentAuth.getCurrent()){const lessonId=window._currentLessonId||null;const lessonGrade=window._currentLessonGrade||null;const result=StudentAuth.awardPoints(correct,total,lessonId,lessonGrade);if(result){if(result.wrongGrade){pointsHtml=`<div class="res-points-earned res-wrong-grade">
+          ⚠️ لا تُحسب نقاط — هذا الدرس من صف مختلف عن صفّك
+        </div>`;}else if(result.earned>0){const motiv=StudentAuth._getMotivation(pct,result.totalPoints,result.isRetry);pointsHtml=`<div class="res-points-earned res-pts-show">
+          <div class="rpe-stars">${motiv.emoji}</div>
+          <div class="rpe-earned">+${result.earned} نقطة${result.isRetry ? ' <span class="rpe-retry">(إعادة — نصف النقاط)</span>' : ''}</div>
+          <div class="rpe-total">مجموعك الآن: <strong>${result.totalPoints}</strong> نقطة</div>
+          <div class="rpe-motiv">${motiv.msg}</div>
+        </div>`;StudentAuth.showPointsToast(result.earned,result.totalPoints,result.isRetry);}}}
+const motiv0=window.StudentAuth&&window.StudentAuth._getMotivation?StudentAuth._getMotivation(pct,0,false):{emoji:pct===100?'🏆':pct>=80?'⭐':pct>=60?'👍':'💪',msg:pct===100?'ممتاز! العلامة الكاملة!':pct>=80?'جيد جداً! أداء رائع':pct>=60?'جيد! راجع وأعد المحاولة':'راجع الدرس وحاول مجدداً'};const modal=document.getElementById('result-modal');document.getElementById('result-content').innerHTML=`
+    <div class="res-box ${cls}">
+      <div class="res-emoji">${motiv0.emoji}</div>
       <div class="res-fraction">${correct} / ${total}</div>
       <div class="res-pct-wrap">
         <div class="res-pct-bar" style="width:${pct}%"></div>
       </div>
       <div class="res-pct-label">${pct}%</div>
-      <p class="res-msg">${data.msg}</p>
-      <div id="res-points-earned" class="res-points-earned hidden"></div>
+      <p class="res-msg">${motiv0.msg}</p>
+      ${pointsHtml}
       <div class="res-btns">
         <button class="res-btn-retry" onclick="retryQuestions()">🔄 أعد المحاولة</button>
         <button class="res-btn-close" onclick="closeResult()">✕ إغلاق</button>

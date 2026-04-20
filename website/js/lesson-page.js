@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded',()=>{const p=new URLSearchParams(location.search);const gradeId=p.get('g');const semId=p.get('s');const unitId=p.get('u');const lessonId=p.get('l');const saved=localStorage.getItem('ibn_moshrf_curriculum');if(saved){try{const parsed=JSON.parse(saved);Object.keys(parsed).forEach(k=>CURRICULUM[k]=parsed[k]);}catch(e){}}
-const grade=CURRICULUM[gradeId];const sem=grade.semesters.find(s=>s.id===semId);const unit=sem.units.find(u=>u.id===unitId);const lesson=unit.lessons.find(l=>l.id===lessonId);document.title=`${lesson.name} - المهارات الرقمية`;window._currentLessonId=lessonId;document.getElementById('breadcrumb').innerHTML=`
+const grade=CURRICULUM[gradeId];const sem=grade.semesters.find(s=>s.id===semId);const unit=sem.units.find(u=>u.id===unitId);const lesson=unit.lessons.find(l=>l.id===lessonId);document.title=`${lesson.name} - المهارات الرقمية`;window._currentLessonId=lessonId;window._currentLessonGrade=gradeId;document.getElementById('breadcrumb').innerHTML=`
     <span class="bc-item" onclick="history.go(-2)" style="cursor:pointer">${sem.name}</span>
     <span class="bc-sep">›</span>
     <span class="bc-item" onclick="history.back()" style="cursor:pointer">${unit.name}</span>
