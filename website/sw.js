@@ -4,7 +4,7 @@
 //  بعد أول زيارة، الموقع يعمل بسرعة كاملة
 // ===============================================
 
-const CACHE_NAME = 'ibn-moshrf-v3';
+const CACHE_NAME = 'ibn-moshrf-v4';
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 أيام
 
 // الملفات التي تُخزَّن فوراً عند التثبيت
@@ -16,6 +16,10 @@ const PRECACHE_URLS = [
   './css/dashboard.css',
   './css/lesson-new.css',
   './js/data.js',
+  './js/data-loader.js',
+  './js/data-grade4.js',
+  './js/data-grade5.js',
+  './js/data-grade6.js',
   './js/app.js',
   './js/dashboard.js',
   './js/student-auth.js',

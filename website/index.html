@@ -11,8 +11,11 @@
 
   <!-- Preload للملفات الأساسية -->
   <link rel="preload" href="css/style.css" as="style">
-  <link rel="preload" href="js/data.js" as="script">
+  <link rel="preload" href="js/data-grade4.js" as="script">
   <link rel="preload" href="js/app.js" as="script">
+  <!-- Prefetch الصفوف الأخرى في الخلفية -->
+  <link rel="prefetch" href="js/data-grade5.js">
+  <link rel="prefetch" href="js/data-grade6.js">
 
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -65,16 +68,18 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <!-- إعدادات Firebase وطبقة قاعدة البيانات -->
-  <script src="js/firebase-config.js"></script>
-  <script src="js/firebase-db.js"></script>
+  <script src="js/firebase-config.js" defer></script>
+  <script src="js/firebase-db.js" defer></script>
 
+  <!-- data.js هيكل فارغ (140 bytes) + loader للصفوف -->
   <script src="js/data.js"></script>
-  <script src="js/student-auth.js"></script>
-  <script src="js/curriculum-loader.js"></script>
-  <script src="js/questions.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/theme.js"></script>
-  <script src="js/animations.js"></script>
+  <script src="js/data-loader.js"></script>
+  <script src="js/student-auth.js" defer></script>
+  <script src="js/curriculum-loader.js" defer></script>
+  <script src="js/questions.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="js/theme.js" defer></script>
+  <script src="js/animations.js" defer></script>
 
   <!-- تسجيل Service Worker للتخزين المؤقت -->
   <script>

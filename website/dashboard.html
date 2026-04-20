@@ -11,8 +11,10 @@
 
   <!-- Preload -->
   <link rel="preload" href="css/dashboard.css" as="style">
-  <link rel="preload" href="js/data.js" as="script">
+  <link rel="preload" href="js/data-grade4.js" as="script">
   <link rel="preload" href="js/dashboard.js" as="script">
+  <link rel="prefetch" href="js/data-grade5.js">
+  <link rel="prefetch" href="js/data-grade6.js">
 
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
@@ -177,8 +179,9 @@
   <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.4/tinymce.min.js" referrerpolicy="origin"></script>
 
   <script src="js/data.js"></script>
-  <script src="js/student-auth.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="js/data-loader.js"></script>
+  <script src="js/student-auth.js" defer></script>
+  <script src="js/dashboard.js" defer></script>
 
   <!-- تسجيل Service Worker -->
   <script>
