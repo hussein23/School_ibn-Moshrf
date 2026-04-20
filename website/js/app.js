@@ -34,9 +34,6 @@ function _renderHome(){currentState={grade:null,semester:null,unit:null,lesson:n
       </div>
     </div>
 
-    <!-- ===== شريط تسجيل دخول الطالب ===== -->
-    <div id="student-bar"></div>
-
     <!-- ===== Hero ===== -->
     <div class="home-hero">
       <div class="hero-stars">⭐ ⭐ ⭐</div>
@@ -103,7 +100,7 @@ function unitCard(grade,sem,unit){const gradeNum=grade.id.replace('grade','');co
       <button class="grade-btn" style="background:${unit.color}">ابدأ الآن ←</button>
     </a>
   `;}
-function openLesson(gradeId,semId,unitId,lessonId){const grade=CURRICULUM[gradeId];const sem=grade.semesters.find(s=>s.id===semId);const unit=sem.units.find(u=>u.id===unitId);const lesson=unit.lessons.find(l=>l.id===lessonId);currentState={grade,semester:sem,unit,lesson};const modal=document.getElementById('lesson-modal');const content=document.getElementById('lesson-content');content.innerHTML=`
+function openLesson(gradeId,semId,unitId,lessonId){const grade=CURRICULUM[gradeId];const sem=grade.semesters.find(s=>s.id===semId);const unit=sem.units.find(u=>u.id===unitId);const lesson=unit.lessons.find(l=>l.id===lessonId);currentState={grade,semester:sem,unit,lesson};window._currentLessonId=lessonId;window._currentLessonGrade=gradeId;const modal=document.getElementById('lesson-modal');const content=document.getElementById('lesson-content');content.innerHTML=`
     <div class="lesson-header" style="--lh-color:${unit.color}">
       <div class="lh-badge">${unit.icon} ${unit.name}</div>
       <h1 class="lh-title">${lesson.name}</h1>
