@@ -2,8 +2,8 @@
   "rules": {
     "ibn_moshrf_students": {
       ".read": true,
+      ".write": true,
       "$studentId": {
-        ".write": true,
         ".validate": "newData.hasChildren(['id', 'username', 'grade', 'points'])"
       }
     },
