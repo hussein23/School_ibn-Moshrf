@@ -117,3 +117,74 @@ function _welcomeToast(name,points){const t=document.createElement('div');t.clas
 function init(){const doUpdate=function(){updateHeaderBtn();updateStudentBar();};if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',doUpdate);}else{doUpdate();}
 if(window.FirebaseDB){window.FirebaseDB.onReady(doUpdate);}}
 init();return{getCurrent,getCurrentFull,login,logout,addStudent,deleteStudent,updateStudent,getAllStudents,resetPoints,awardPoints,getLeaderboard,getGradeRank,_getMotivation,updateHeaderBtn,updateStudentBar,showPointsToast,_doBarLogin};})();
+
+// ── حساب المعلم على الموقع (Teacher Website Account) ──────────────
+(function(){
+  var TEACHER_ACCT_KEY='ibn_moshrf_teacher_account';
+  var TEACHER_QUICK_KEY='ibn_moshrf_teacher_quick';
+  var TEACHER_SESSION='ibn_moshrf_teacher_auth';
+  var TEACHER_LOGGED='ibn_moshrf_teacher_logged_in';
+  var SALT='ibn_moshrf_salt_2025';
+
+  async function _hash(pw){
+    var enc=new TextEncoder();
+    var buf=await crypto.subtle.digest('SHA-256',enc.encode(pw+SALT));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  function _getAcct(){try{return JSON.parse(localStorage.getItem(TEACHER_ACCT_KEY));}catch{return null;}}
+  function _isTeacher(){return sessionStorage.getItem(TEACHER_SESSION)==='1'&&localStorage.getItem(TEACHER_LOGGED)==='1';}
+  function _setTeacher(){
+    sessionStorage.setItem(TEACHER_SESSION,'1');
+    localStorage.setItem(TEACHER_LOGGED,'1');
+    localStorage.setItem(TEACHER_QUICK_KEY,JSON.stringify({ts:Date.now()}));
+  }
+  function _clearTeacher(){
+    sessionStorage.removeItem(TEACHER_SESSION);
+    localStorage.removeItem(TEACHER_LOGGED);
+    localStorage.removeItem(TEACHER_QUICK_KEY);
+  }
+  function _teacherBar(){
+    var bar=document.getElementById('student-bar');
+    if(!bar)return;
+    bar.classList.add('sb-visible');
+    bar.innerHTML=`<div class="sb-card"><div class="sb-card-bg">⚙️</div><div class="sb-card-inner"><div class="sb-block"><div class="sb-block-icon">👨‍🏫</div><div class="sb-block-text"><span class="sb-block-label">الحساب</span><span class="sb-block-value">المعلم</span></div></div><div class="sb-divider"></div><div class="sb-block"><div class="sb-block-icon">🔧</div><div class="sb-block-text"><span class="sb-block-label">الوجهة</span><span class="sb-block-value">لوحة التحكم</span></div></div><a href="dashboard.html" class="sb-login-btn" style="text-decoration:none;text-align:center">انتقل للوحة التحكم ←</a><button class="sb-logout-btn" onclick="StudentAuth.teacherLogout()">↩ خروج</button></div></div>`;
+  }
+
+  // Patch login — check teacher account first
+  var _origLogin=StudentAuth.login;
+  StudentAuth.login=async function(username,password){
+    username=(username||'').trim();
+    password=(password||'').trim();
+    var acct=_getAcct();
+    if(acct&&acct.username&&acct.username.toLowerCase()===username.toLowerCase()){
+      var hashed=await _hash(password);
+      if(hashed===acct.password){_setTeacher();_teacherBar();return{ok:true,isTeacher:true};}
+      return{ok:false,msg:'كلمة المرور غير صحيحة'};
+    }
+    return _origLogin(username,password);
+  };
+
+  // Patch updateStudentBar — show teacher bar if teacher logged in
+  var _origUpdateStudentBar=StudentAuth.updateStudentBar;
+  StudentAuth.updateStudentBar=function(){
+    if(_isTeacher()){_teacherBar();return;}
+    _origUpdateStudentBar();
+  };
+
+  // Teacher logout
+  StudentAuth.teacherLogout=function(){_clearTeacher();StudentAuth.updateStudentBar();};
+
+  // Set teacher account credentials (called from dashboard)
+  StudentAuth.setTeacherAccount=async function(username,password){
+    var hashed=await _hash(password);
+    localStorage.setItem(TEACHER_ACCT_KEY,JSON.stringify({username:username.trim(),password:hashed}));
+    return{ok:true};
+  };
+  StudentAuth.getTeacherAccount=_getAcct;
+  StudentAuth.isTeacherLoggedIn=_isTeacher;
+
+  // On page load, restore teacher bar if session is active
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){if(_isTeacher())_teacherBar();});
+  }else{if(_isTeacher())_teacherBar();}
+})();

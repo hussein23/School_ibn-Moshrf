@@ -56,6 +56,7 @@
       <div class="sidebar-footer">
         <button class="add-grade-btn" onclick="openAddLesson()">+ إضافة درس جديد</button>
         <button class="add-grade-btn students-nav-btn" onclick="showStudentPanel()" style="margin-top:8px;background:#7C3AED">👥 إدارة الطلاب</button>
+        <button class="add-grade-btn students-nav-btn" onclick="showTeacherAccountPanel()" style="margin-top:8px;background:#0ea5e9">👨‍🏫 حساب المعلم</button>
       </div>
     </aside>
 
@@ -90,6 +91,9 @@
 
       <!-- إدارة الطلاب (يظهر عند الضغط على "إدارة الطلاب") -->
       <div class="hidden" id="student-panel"></div>
+
+      <!-- حساب المعلم على الموقع (يظهر عند الضغط على "حساب المعلم") -->
+      <div class="hidden" id="teacher-account-panel"></div>
     </main>
   </div>
 

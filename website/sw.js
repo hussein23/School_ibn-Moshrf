@@ -4,7 +4,7 @@
 //  بعد أول زيارة، الموقع يعمل بسرعة كاملة
 // ===============================================
 
-const CACHE_NAME = 'ibn-moshrf-v6';
+const CACHE_NAME = 'ibn-moshrf-v7';
 const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 أيام
 
 // الملفات التي تُخزَّن فوراً عند التثبيت
@@ -31,6 +31,11 @@ const PRECACHE_URLS = [
   './js/curriculum-loader.js',
   './js/firebase-db.js',
   './js/firebase-config.js',
+  './fonts/thmanyahsans-Light.woff2',
+  './fonts/thmanyahsans-Regular.woff2',
+  './fonts/thmanyahsans-Medium.woff2',
+  './fonts/thmanyahsans-Bold.woff2',
+  './fonts/thmanyahsans-Black.woff2',
 ];
 
 // ── التثبيت: تحميل مسبق لجميع الملفات ────────

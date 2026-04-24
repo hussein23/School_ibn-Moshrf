@@ -21,7 +21,8 @@ if(pinEl){pinEl.value='';pinEl.focus();}
 return;}
 _clearPinLock();document.getElementById('pin-overlay').classList.add('hidden');sessionStorage.setItem(TEACHER_SESSION,'1');_initDashboard();}
 function resetTeacherPin(){const conf=confirm('هل تريد إعادة تعيين رمز الدخول؟ ستحتاج لإنشاء رمز جديد في المرة القادمة.');if(!conf)return;localStorage.removeItem(TEACHER_PIN_KEY);sessionStorage.removeItem(TEACHER_SESSION);location.reload();}
-function init(){if(!_isTeacherAuthed()){showPinModal();return;}
+function init(){if(!_isTeacherAuthed()){try{const quick=JSON.parse(localStorage.getItem('ibn_moshrf_teacher_quick')||'null');if(quick&&quick.ts&&(Date.now()-quick.ts)<60000){localStorage.removeItem('ibn_moshrf_teacher_quick');sessionStorage.setItem(TEACHER_SESSION,'1');_initDashboard();return;}}catch(e){}
+showPinModal();return;}
 _initDashboard();}
 function _initDashboard(){loadCurriculum();renderSidebar();renderStats();const _prevHandler=window._onCurriculumUpdate;window._onCurriculumUpdate=function(data){if(_prevHandler)_prevHandler(data);curriculum=deepClone(data);renderSidebar();renderStats();if(!activeLesson)showOverview();setSaveStatus('☁️ تم التزامن مع Firebase');};}
 function loadCurriculum(){const firebaseData=window.FirebaseDB&&window.FirebaseDB.dbLoadCurriculum?window.FirebaseDB.dbLoadCurriculum():null;if(firebaseData){curriculum=deepClone(firebaseData);try{localStorage.setItem(STORAGE_KEY,JSON.stringify(curriculum));}catch(e){}
@@ -85,8 +86,35 @@ function renderStats(){const grid=document.getElementById('stats-grid');let tota
       <div class="stat-card-num" style="color:#3B82F6">${totalQuestions}</div>
       <div class="stat-card-label">❓ إجمالي الأسئلة</div>
     </div>`);grid.innerHTML=cards.join('');}
-function showOverview(){document.getElementById('overview-panel').classList.remove('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.add('hidden');}
-function showStudentPanel(){document.getElementById('overview-panel').classList.add('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.remove('hidden');renderStudentPanel();}
+function showOverview(){document.getElementById('overview-panel').classList.remove('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.add('hidden');document.getElementById('teacher-account-panel').classList.add('hidden');}
+function showStudentPanel(){document.getElementById('overview-panel').classList.add('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.remove('hidden');document.getElementById('teacher-account-panel').classList.add('hidden');renderStudentPanel();}
+function showTeacherAccountPanel(){document.getElementById('overview-panel').classList.add('hidden');document.getElementById('lesson-editor').classList.add('hidden');document.getElementById('student-panel').classList.add('hidden');document.getElementById('teacher-account-panel').classList.remove('hidden');renderTeacherAccountPanel();}
+function renderTeacherAccountPanel(){const panel=document.getElementById('teacher-account-panel');if(!panel)return;const existing=window.StudentAuth&&window.StudentAuth.getTeacherAccount?window.StudentAuth.getTeacherAccount():null;panel.innerHTML=`
+    <div class="sp-header">
+      <h2 class="sp-title">👨‍🏫 حساب المعلم على الموقع</h2>
+      <p class="sp-subtitle">أنشئ حساباً خاصاً للمعلم على الموقع الرئيسي — عند تسجيل الدخول بهذا الحساب ستظهر زر الانتقال المباشر للوحة التحكم</p>
+    </div>
+    <div class="sp-content">
+      <div class="field-group" style="max-width:420px;margin:0 auto">
+        ${existing ? `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:14px;color:#166534">✅ يوجد حساب معلم حالياً — الاسم:<strong>${existing.username}</strong><br><small style="opacity:.8">يمكنك تحديثه بإدخال بيانات جديدة أدناه</small></div>` : `<div style="background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:14px;color:#713f12">⚠️ لا يوجد حساب معلم بعد — أنشئه الآن</div>`}
+        <div class="field-row" style="margin-bottom:14px">
+          <label class="field-label">اسم المستخدم (للمعلم)</label>
+          <input class="field-input" id="ta-username" type="text" placeholder="مثال: teacher2025" value="${existing ? existing.username : ''}">
+        </div>
+        <div class="field-row" style="margin-bottom:14px">
+          <label class="field-label">كلمة المرور الجديدة</label>
+          <input class="field-input" id="ta-password" type="password" placeholder="أدخل كلمة مرور قوية">
+        </div>
+        <div class="field-row" style="margin-bottom:20px">
+          <label class="field-label">تأكيد كلمة المرور</label>
+          <input class="field-input" id="ta-password2" type="password" placeholder="أعد إدخال كلمة المرور">
+        </div>
+        <div id="ta-msg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:14px"></div>
+        <button class="btn btn-primary" onclick="saveTeacherAccount()" style="width:100%">💾 حفظ حساب المعلم</button>
+      </div>
+    </div>`;}
+async function saveTeacherAccount(){const un=(document.getElementById('ta-username').value||'').trim();const pw=(document.getElementById('ta-password').value||'').trim();const pw2=(document.getElementById('ta-password2').value||'').trim();const msgEl=document.getElementById('ta-msg');function showMsg(txt,ok){msgEl.textContent=txt;msgEl.style.display='block';msgEl.style.background=ok?'#f0fdf4':'#fef2f2';msgEl.style.color=ok?'#166534':'#991b1b';msgEl.style.border=`1px solid ${ok ? '#86efac' : '#fca5a5'}`;}
+if(!un)return showMsg('⚠️ يرجى إدخال اسم المستخدم',false);if(!pw)return showMsg('⚠️ يرجى إدخال كلمة المرور',false);if(pw!==pw2)return showMsg('⚠️ كلمتا المرور غير متطابقتين',false);if(pw.length<4)return showMsg('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل',false);if(window.StudentAuth&&window.StudentAuth.setTeacherAccount){await window.StudentAuth.setTeacherAccount(un,pw);showMsg('✅ تم حفظ حساب المعلم بنجاح! يمكنك الآن تسجيل الدخول من الموقع الرئيسي',true);document.getElementById('ta-password').value='';document.getElementById('ta-password2').value='';setTimeout(renderTeacherAccountPanel,1500);}}
 let _spFilter={grade:'all',category:'all',sort:'points'};function renderStudentPanel(){const panel=document.getElementById('student-panel');if(!window.StudentAuth)return;const gradeNames={grade4:'الصف الرابع',grade5:'الصف الخامس',grade6:'الصف السادس'};const gradeColors={grade4:'#FF6B35',grade5:'#2196F3',grade6:'#7C3AED'};const gradeIcons={grade4:'🟠',grade5:'🔵',grade6:'🟣'};const catLabels={excellent:'🌟 متفوق',good:'👍 جيد',normal:'📘 عادي',needs_help:'⚠️ يحتاج دعم'};const catColors={excellent:'#16a34a',good:'#2196F3',normal:'#64748b',needs_help:'#ef4444'};let all=StudentAuth.getAllStudents();all.forEach(st=>{const pts=st.points||0;const lc=Object.keys(st.lessons||{}).length;if(!st.category||st.category==='normal'){if(pts>=200||lc>=10)st.category='excellent';else if(pts>=100||lc>=5)st.category='good';else if(pts===0&&lc===0)st.category='needs_help';else st.category='normal';}});let students=all.filter(st=>{if(_spFilter.grade!=='all'&&st.grade!==_spFilter.grade)return false;if(_spFilter.category!=='all'&&(st.category||'normal')!==_spFilter.category)return false;return true;});if(_spFilter.sort==='points')students.sort((a,b)=>(b.points||0)-(a.points||0));if(_spFilter.sort==='visits')students.sort((a,b)=>(b.visitCount||0)-(a.visitCount||0));if(_spFilter.sort==='attempts')students.sort((a,b)=>(b.attemptCount||0)-(a.attemptCount||0));if(_spFilter.sort==='lessons')students.sort((a,b)=>Object.keys(b.lessons||{}).length-Object.keys(a.lessons||{}).length);if(_spFilter.sort==='name')students.sort((a,b)=>a.username.localeCompare(b.username,'ar'));const totalPts=all.reduce((s,st)=>s+(st.points||0),0);const countExcell=all.filter(s=>s.category==='excellent').length;const countNeed=all.filter(s=>s.category==='needs_help').length;const countByGrade={grade4:0,grade5:0,grade6:0};all.forEach(st=>{if(countByGrade[st.grade]!==undefined)countByGrade[st.grade]++;});panel.innerHTML=`
     <div class="sp-dash-header">
       <div>
