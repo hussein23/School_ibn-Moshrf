@@ -147,7 +147,7 @@ init();return{getCurrent,getCurrentFull,login,logout,addStudent,deleteStudent,up
     var bar=document.getElementById('student-bar');
     if(!bar)return;
     bar.classList.add('sb-visible');
-    bar.innerHTML=`<div class="sb-card"><div class="sb-card-bg">⚙️</div><div class="sb-card-inner"><div class="sb-block"><div class="sb-block-icon">👨‍🏫</div><div class="sb-block-text"><span class="sb-block-label">الحساب</span><span class="sb-block-value">المعلم</span></div></div><div class="sb-divider"></div><div class="sb-block"><div class="sb-block-icon">🔧</div><div class="sb-block-text"><span class="sb-block-label">الوجهة</span><span class="sb-block-value">لوحة التحكم</span></div></div><a href="dashboard.html" class="sb-login-btn" style="text-decoration:none;text-align:center">انتقل للوحة التحكم ←</a><button class="sb-logout-btn" onclick="StudentAuth.teacherLogout()">↩ خروج</button></div></div>`;
+    bar.innerHTML=`<div class="sb-card"><div class="sb-card-bg">⚙️</div><div class="sb-card-inner"><div class="sb-block"><div class="sb-block-icon">👨‍🏫</div><div class="sb-block-text"><span class="sb-block-label">الحساب</span><span class="sb-block-value">المعلم</span></div></div><div class="sb-divider"></div><div class="sb-block"><div class="sb-block-icon">🔧</div><div class="sb-block-text"><span class="sb-block-label">الوجهة</span><span class="sb-block-value">لوحة التحكم</span></div></div><a href="dashboard.html" target="_blank" rel="noopener" class="sb-login-btn" style="text-decoration:none;text-align:center">انتقل للوحة التحكم ←</a><button class="sb-logout-btn" onclick="StudentAuth.teacherLogout()">↩ خروج</button></div></div>`;
   }
 
   // Patch login — check teacher account first
