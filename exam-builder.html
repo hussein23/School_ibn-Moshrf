@@ -181,12 +181,32 @@
                        placeholder="مدرسة ابن المشرف الابتدائية">
               </div>
               <div class="form-group">
+                <label class="form-label">المنطقة / الإدارة التعليمية</label>
+                <input type="text" class="form-input" id="s-region"
+                       onchange="onSettingChange('region', this.value)"
+                       placeholder="الأحساء">
+              </div>
+              <div class="form-group">
                 <label class="form-label">اسم المعلم</label>
                 <input type="text" class="form-input" id="s-teacherName"
                        onchange="onSettingChange('teacherName', this.value)"
                        placeholder="اسم المعلم">
               </div>
             </div>
+            <!-- شعار الوزارة -->
+            <div class="settings-section-title" style="margin-top:16px">🖼️ شعار الوزارة</div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:8px;flex-wrap:wrap">
+              <label class="logo-upload-btn">
+                📁 رفع صورة الشعار
+                <input type="file" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
+              </label>
+              <img id="logo-preview" style="display:none;max-height:70px;border:1px solid #ddd;padding:4px;border-radius:6px" alt="معاينة الشعار">
+              <button class="eb-btn eb-btn-ghost" style="background:#f5f5f5;color:#666;border:1px solid #ddd"
+                      onclick="EB.settings.logoBase64='';document.getElementById('logo-preview').style.display='none';showToast('تم حذف الشعار','info')">
+                🗑️ حذف الشعار
+              </button>
+            </div>
+            <small style="color:#999;display:block;margin-top:6px">يظهر الشعار في منتصف رأس ورقة الاختبار</small>
           </div>
 
           <!-- تفاصيل الاختبار -->
