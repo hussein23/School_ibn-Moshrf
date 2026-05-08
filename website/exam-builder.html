@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منشئ الاختبار - المهارات الرقمية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap">
+  <link rel="stylesheet" href="css/exam-builder.css">
+</head>
+<body>
+
+  <!-- ===== الهيدر ===== -->
+  <header class="eb-header">
+    <div class="eb-header-logo">
+      <span>📋</span>
+      <div>
+        <div>منشئ الاختبار</div>
+        <div style="font-size:0.7rem;opacity:0.8;font-weight:400">المهارات الرقمية</div>
+      </div>
+    </div>
+    <div class="eb-header-actions">
+      <button class="eb-btn eb-btn-ghost" onclick="clearAllSelected()">🗑️ مسح الاختبار</button>
+      <button class="eb-btn eb-btn-white" onclick="switchTab('preview'); renderExamPaper(false)">👁 معاينة</button>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,0.3)"></div>
+      <button class="eb-btn eb-btn-warning" onclick="exportWord(false)" title="تنزيل ملف Word">
+        📝 Word
+      </button>
+      <button class="eb-btn eb-btn-purple" onclick="exportWord(true)" title="تنزيل نموذج الإجابة Word">
+        🔑 إجابة Word
+      </button>
+      <button class="eb-btn eb-btn-danger" onclick="exportPDF(false)" title="طباعة / PDF">
+        🖨️ PDF
+      </button>
+      <button class="eb-btn eb-btn-success" onclick="exportPDF(true)" title="طباعة نموذج الإجابة">
+        🔑 إجابة PDF
+      </button>
+      <a class="eb-btn eb-btn-ghost" href="dashboard.html">← لوحة التحكم</a>
+    </div>
+  </header>
+
+  <!-- ===== التخطيط ===== -->
+  <div class="eb-layout">
+
+    <!-- ===== الشريط الجانبي ===== -->
+    <aside class="eb-sidebar">
+
+      <div class="eb-sidebar-header">
+        <h2>🎓 اختيار المحتوى</h2>
+        <p>اختر الصف والدروس لبناء اختبارك</p>
+      </div>
+
+      <!-- خطوات التنقل -->
+      <div class="eb-steps">
+        <div class="eb-step active" id="step-1" onclick="goStep(1)">
+          <span class="eb-step-num">1️⃣</span>
+          الصف
+        </div>
+        <div class="eb-step" id="step-2" onclick="goStep(2)">
+          <span class="eb-step-num">2️⃣</span>
+          الوحدات
+        </div>
+      </div>
+
+      <!-- محتوى الخطوة 1 -->
+      <div class="eb-step-content active" id="step1-content">
+        <!-- يُملأ بـ JS -->
+        <div class="empty-state" style="padding:40px 20px">
+          <div class="empty-state-icon">⏳</div>
+          <p>جارٍ التحميل...</p>
+        </div>
+      </div>
+
+      <!-- محتوى الخطوة 2 -->
+      <div class="eb-step-content" id="step2-content">
+        <div class="empty-state" style="padding:40px 20px">
+          <div class="empty-state-icon">⬆️</div>
+          <h3>اختر الصف أولاً</h3>
+          <p>ثم اختر الفصل الدراسي</p>
+        </div>
+      </div>
+
+      <!-- ملخص التحديد -->
+      <div class="selection-summary" id="selection-summary">
+        <small style="color:#999">لم يتم تحديد دروس بعد</small>
+      </div>
+
+    </aside>
+
+    <!-- ===== المنطقة الرئيسية ===== -->
+    <div class="eb-main">
+
+      <!-- شريط التبويبات -->
+      <div class="eb-tabs">
+        <button class="eb-tab active" id="tab-questions" onclick="switchTab('questions')">
+          📚 تصفح الأسئلة
+          <span class="eb-tab-badge" id="questions-tab-badge">0</span>
+        </button>
+        <button class="eb-tab" id="tab-selected" onclick="switchTab('selected')">
+          ✅ الاختبار الحالي
+          <span class="eb-tab-badge" id="selected-tab-badge">0</span>
+        </button>
+        <button class="eb-tab" id="tab-settings" onclick="switchTab('settings')">
+          ⚙️ إعدادات الاختبار
+        </button>
+        <button class="eb-tab" id="tab-preview" onclick="switchTab('preview'); renderExamPaper(false)">
+          👁 المعاينة النهائية
+        </button>
+      </div>
+
+      <!-- ===== تبويب: تصفح الأسئلة ===== -->
+      <div class="eb-tab-content active" id="tc-questions">
+        <!-- شريط البحث -->
+        <div class="q-search-bar">
+          <input type="text" class="q-search-input" placeholder="🔍 ابحث في الأسئلة..."
+                 oninput="searchQuestions(this.value)">
+        </div>
+
+        <!-- شريط الفلاتر -->
+        <div class="questions-toolbar">
+          <div class="questions-toolbar-right">
+            <span style="font-size:0.82rem;color:#666;font-weight:600">تصفية:</span>
+            <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">الكل</button>
+            <button class="filter-btn" id="filter-mcq" onclick="setFilter('mcq')">اختيار متعدد</button>
+            <button class="filter-btn" id="filter-tf" onclick="setFilter('tf')">صح وخطأ</button>
+            <button class="filter-btn" id="filter-match" onclick="setFilter('match')">توصيل</button>
+            <button class="filter-btn" id="filter-fill" onclick="setFilter('fill')">فراغات</button>
+          </div>
+          <div class="questions-toolbar-left">
+            <button class="eb-btn eb-btn-primary eb-btn-sm" onclick="selectAllVisible()">تحديد الكل</button>
+          </div>
+        </div>
+
+        <!-- قائمة الأسئلة -->
+        <div class="questions-list" id="questions-browser">
+          <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <h3>لم يتم تحديد دروس بعد</h3>
+            <p>اختر الصف والفصل والدروس من الشريط الجانبي</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== تبويب: الاختبار الحالي ===== -->
+      <div class="eb-tab-content" id="tc-selected">
+        <div class="selected-panel">
+          <div class="selected-header">
+            <div class="selected-title">🗂 الأسئلة المختارة</div>
+            <div>
+              <span class="selected-count" id="selected-count">0</span>
+              <span style="font-size:0.8rem;margin-right:8px;color:#666"> سؤال</span>
+            </div>
+          </div>
+
+          <div class="alert alert-info" style="margin-bottom:12px">
+            اسحب البطاقات لإعادة ترتيب الأسئلة. اضغط ✏️ لتعديل أي سؤال.
+          </div>
+
+          <div class="selected-questions" id="selected-questions-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">☑️</div>
+              <h3>لا توجد أسئلة محددة</h3>
+              <p>اختر أسئلة من تبويب "تصفح الأسئلة"</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== تبويب: إعدادات الاختبار ===== -->
+      <div class="eb-tab-content" id="tc-settings">
+        <div class="settings-panel">
+
+          <!-- معلومات المدرسة -->
+          <div class="settings-section">
+            <div class="settings-section-title">🏫 معلومات المدرسة والمعلم</div>
+            <div class="settings-grid">
+              <div class="form-group">
+                <label class="form-label">اسم المدرسة</label>
+                <input type="text" class="form-input" id="s-schoolName"
+                       onchange="onSettingChange('schoolName', this.value)"
+                       placeholder="مدرسة ابن المشرف الابتدائية">
+              </div>
+              <div class="form-group">
+                <label class="form-label">اسم المعلم</label>
+                <input type="text" class="form-input" id="s-teacherName"
+                       onchange="onSettingChange('teacherName', this.value)"
+                       placeholder="اسم المعلم">
+              </div>
+            </div>
+          </div>
+
+          <!-- تفاصيل الاختبار -->
+          <div class="settings-section">
+            <div class="settings-section-title">📄 تفاصيل الاختبار</div>
+            <div class="settings-grid cols-3">
+              <div class="form-group">
+                <label class="form-label">المادة</label>
+                <input type="text" class="form-input" id="s-subject"
+                       onchange="onSettingChange('subject', this.value)"
+                       value="المهارات الرقمية">
+              </div>
+              <div class="form-group">
+                <label class="form-label">الصف</label>
+                <input type="text" class="form-input" id="s-grade"
+                       onchange="onSettingChange('grade', this.value)"
+                       placeholder="الصف الرابع">
+              </div>
+              <div class="form-group">
+                <label class="form-label">الفصل الدراسي</label>
+                <input type="text" class="form-input" id="s-semester"
+                       onchange="onSettingChange('semester', this.value)"
+                       placeholder="الفصل الأول">
+              </div>
+            </div>
+            <div class="settings-grid cols-3" style="margin-top:12px">
+              <div class="form-group">
+                <label class="form-label">الفترة</label>
+                <select class="form-select" id="s-period"
+                        onchange="onSettingChange('period', this.value)">
+                  <option>الفترة الأولى</option>
+                  <option>الفترة الثانية</option>
+                  <option>الفترة الثالثة</option>
+                  <option>اختبار منتصف الفصل</option>
+                  <option>اختبار نهاية الفصل</option>
+                  <option>اختبار تشخيصي</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">التاريخ</label>
+                <input type="text" class="form-input" id="s-date"
+                       onchange="onSettingChange('date', this.value)"
+                       placeholder="التاريخ الهجري">
+              </div>
+              <div class="form-group">
+                <label class="form-label">الوقت المخصص</label>
+                <input type="text" class="form-input" id="s-duration"
+                       onchange="onSettingChange('duration', this.value)"
+                       placeholder="45 دقيقة">
+              </div>
+            </div>
+            <div class="settings-grid cols-1" style="margin-top:12px">
+              <div class="form-group">
+                <label class="form-label">الدرجة الكاملة</label>
+                <input type="number" class="form-input" id="s-totalMarks"
+                       onchange="onSettingChange('totalMarks', this.value)"
+                       value="20" min="1" max="100" style="width:120px">
+              </div>
+            </div>
+          </div>
+
+          <!-- تعليمات الاختبار -->
+          <div class="settings-section">
+            <div class="settings-section-title">📋 تعليمات الاختبار</div>
+            <div class="form-group">
+              <label class="form-label">نص التعليمات (يمكن استخدام ${totalMarks} لإدراج الدرجة تلقائياً)</label>
+              <textarea class="form-textarea" id="s-instructions" rows="4"
+                        onchange="onSettingChange('instructions', this.value)">أجب عن جميع الأسئلة الآتية:
+اقرأ السؤال جيداً قبل الإجابة.
+العلامة الكاملة للاختبار (${totalMarks}) درجة.</textarea>
+            </div>
+          </div>
+
+          <!-- خيارات التصدير -->
+          <div class="settings-section">
+            <div class="settings-section-title">⬇️ تصدير الاختبار</div>
+            <div class="export-options">
+              <div class="export-card pdf" onclick="exportPDF(false)">
+                <div class="export-card-icon">🖨️</div>
+                <div class="export-card-title">طباعة / PDF</div>
+                <div class="export-card-desc">ورقة الاختبار للطلاب</div>
+              </div>
+              <div class="export-card word" onclick="exportWord(false)">
+                <div class="export-card-icon">📝</div>
+                <div class="export-card-title">ملف Word</div>
+                <div class="export-card-desc">قابل للتعديل في Microsoft Word</div>
+              </div>
+              <div class="export-card key" onclick="exportPDF(true)">
+                <div class="export-card-icon">🔑</div>
+                <div class="export-card-title">نموذج الإجابة PDF</div>
+                <div class="export-card-desc">مع الإجابات الصحيحة</div>
+              </div>
+              <div class="export-card" style="border-color:#6A1B9A" onclick="exportWord(true)">
+                <div class="export-card-icon">📋</div>
+                <div class="export-card-title">نموذج الإجابة Word</div>
+                <div class="export-card-desc">إجابات قابلة للتعديل</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== تبويب: المعاينة ===== -->
+      <div class="eb-tab-content" id="tc-preview">
+        <div class="preview-panel">
+
+          <!-- شريط أزرار المعاينة -->
+          <div class="preview-toolbar no-print">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:0.82rem;color:#666;font-weight:600">عرض:</span>
+              <button class="eb-btn eb-btn-outline eb-btn-sm"
+                      onclick="renderExamPaper(false)">📄 ورقة الاختبار</button>
+              <button class="eb-btn eb-btn-success eb-btn-sm"
+                      onclick="renderExamPaper(true)">🔑 نموذج الإجابة</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="eb-btn eb-btn-danger eb-btn-sm" onclick="exportPDF(false)">🖨️ طباعة PDF</button>
+              <button class="eb-btn eb-btn-warning eb-btn-sm" onclick="exportWord(false)">📝 تنزيل Word</button>
+              <button class="eb-btn eb-btn-purple eb-btn-sm" onclick="exportWord(true)">🔑 إجابة Word</button>
+            </div>
+          </div>
+
+          <!-- ورقة الاختبار المعاينة -->
+          <div id="exam-paper-area">
+            <div class="empty-state" style="padding:80px 20px;background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+              <div class="empty-state-icon">📄</div>
+              <h3>المعاينة النهائية</h3>
+              <p>أضف أسئلة من تبويب "تصفح الأسئلة"<br>ثم سيظهر الاختبار هنا جاهزاً للطباعة</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- شريط الحالة السفلي -->
+      <div class="eb-status-bar">
+        <div class="status-items" id="status-info">
+          <div class="status-item"><span class="status-dot"></span> جاهز</div>
+        </div>
+        <div style="font-size:0.75rem;opacity:0.7">منشئ الاختبار - المهارات الرقمية</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== نافذة تعديل السؤال ===== -->
+  <div class="modal-overlay hidden" id="modal-overlay" onclick="closeEditModal()">
+    <div class="edit-modal" onclick="event.stopPropagation()" id="edit-modal">
+      <!-- يُملأ بـ JS -->
+    </div>
+  </div>
+
+  <!-- ===== منطقة الطباعة المخفية ===== -->
+  <div id="print-area" style="display:none"></div>
+
+  <!-- ===== توست الإشعارات ===== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- السكريبتات -->
+  <script src="js/data.js"></script>
+  <script src="js/exam-builder.js"></script>
+
+</body>
+</html>
