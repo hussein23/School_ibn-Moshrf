@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة التحكم - المهارات الرقمية</title>
+
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- Preload -->
+  <link rel="preload" href="css/dashboard.css" as="style">
+  <link rel="preload" href="js/data-grade4.js" as="script">
+  <link rel="preload" href="js/dashboard.js" as="script">
+  <link rel="prefetch" href="js/data-grade5.js">
+  <link rel="prefetch" href="js/data-grade6.js">
+
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
@@ -43,6 +56,7 @@
       <div class="sidebar-footer">
         <button class="add-grade-btn" onclick="openAddLesson()">+ إضافة درس جديد</button>
         <button class="add-grade-btn students-nav-btn" onclick="showStudentPanel()" style="margin-top:8px;background:#7C3AED">👥 إدارة الطلاب</button>
+        <button class="add-grade-btn students-nav-btn" onclick="showTeacherAccountPanel()" style="margin-top:8px;background:#0ea5e9">👨‍🏫 حساب المعلم</button>
       </div>
     </aside>
 
@@ -81,7 +95,10 @@
       <div class="lesson-editor hidden" id="lesson-editor"></div>
 
       <!-- إدارة الطلاب (يظهر عند الضغط على "إدارة الطلاب") -->
-      <div class="lesson-editor hidden" id="student-panel"></div>
+      <div class="hidden" id="student-panel"></div>
+
+      <!-- حساب المعلم على الموقع (يظهر عند الضغط على "حساب المعلم") -->
+      <div class="hidden" id="teacher-account-panel"></div>
     </main>
   </div>
 
@@ -168,8 +185,23 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/firebase-db.js"></script>
 
+  <!-- TinyMCE 6 via jsDelivr (بدون API key) -->
+  <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.4/tinymce.min.js" referrerpolicy="origin"></script>
+
   <script src="js/data.js"></script>
-  <script src="js/student-auth.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="js/data-loader.js"></script>
+  <script src="js/student-auth.js" defer></script>
+  <script src="js/dashboard.js" defer></script>
+
+  <!-- تسجيل Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function (reg) { console.log('[SW] مسجّل:', reg.scope); })
+          .catch(function (err) { console.warn('[SW] فشل:', err); });
+      });
+    }
+  </script>
 </body>
 </html>
