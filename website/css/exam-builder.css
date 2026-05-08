@@ -794,357 +794,272 @@ body {
   margin-bottom: 16px;
 }
 
-/* ورقة الاختبار */
+/* ===== ورقة الاختبار ===== */
 .exam-paper {
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   max-width: 800px;
   margin: 0 auto;
-  padding: 40px;
+  padding: 30px 36px;
   font-family: 'Cairo', 'Traditional Arabic', sans-serif;
   direction: rtl;
   min-height: 1000px;
+  font-size: 0.9rem;
 }
 
-/* رأس الاختبار */
+/* رأس الاختبار - جدول 3 أعمدة */
 .exam-header-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
-  border: 2px solid #1565C0;
-}
-
-.exam-header-table td, .exam-header-table th {
-  border: 1px solid #ccc;
-  padding: 6px 10px;
-  font-size: 0.85rem;
-  text-align: center;
-  direction: rtl;
-}
-
-.exam-header-ministry {
-  background: #E3F2FD;
-  font-weight: 700;
-  color: #1565C0;
-  text-align: center;
-  font-size: 0.8rem;
-}
-
-.exam-logo-cell { width: 80px; }
-
-.exam-logo-img {
-  width: 70px;
-  height: 70px;
-  object-fit: contain;
-  display: block;
-  margin: auto;
-}
-
-.exam-logo-placeholder {
-  width: 70px;
-  height: 70px;
-  border: 2px dashed #ccc;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  margin: auto;
-}
-
-.exam-title-cell {
-  background: #1565C0;
-  color: #fff;
-  font-weight: 700;
-  font-size: 1.1rem;
-  text-align: center;
-}
-
-.exam-info-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: none;
-}
-
-.exam-info-item {
-  text-align: center;
-  padding: 6px;
-  border-right: 1px solid #ccc;
-}
-
-.exam-info-item:last-child { border-right: none; }
-
-.exam-info-label {
-  font-size: 0.7rem;
-  color: #666;
-  display: block;
-}
-
-.exam-info-value {
-  font-size: 0.85rem;
-  font-weight: 700;
-  display: block;
-  min-height: 20px;
-  border-bottom: 1px dotted #ccc;
-}
-
-.exam-student-row {
-  padding: 8px 10px;
-  display: flex;
-  gap: 20px;
-  background: #FAFAFA;
-  border-top: 1px solid #ccc;
-  font-size: 0.85rem;
-}
-
-.exam-student-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.exam-student-field span:first-child { font-weight: 700; white-space: nowrap; }
-.exam-student-line {
-  flex: 1;
-  border-bottom: 1px solid #333;
-  min-width: 100px;
-  height: 20px;
-}
-
-/* محتوى الاختبار */
-.exam-body { margin-top: 16px; }
-
-.exam-instructions {
-  background: #FFF9C4;
-  border-right: 4px solid #F57F17;
-  padding: 10px 14px;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  font-size: 0.82rem;
-  margin-bottom: 20px;
-  line-height: 1.8;
-}
-
-/* أقسام الأسئلة */
-.exam-section {
-  margin-bottom: 28px;
-}
-
-.exam-section-header {
-  background: #1565C0;
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-
-.exam-section-marks {
-  background: rgba(255,255,255,0.2);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.78rem;
-}
-
-.exam-section-body {
-  border: 2px solid #1565C0;
-  border-top: none;
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-  padding: 16px;
-}
-
-/* السؤال الواحد في الاختبار */
-.exam-question {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px dashed var(--gray-300);
-}
-
-.exam-question:last-child {
+  border: 1.5px solid #444;
   margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
 }
-
-.exam-q-text {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  line-height: 1.7;
-}
-
-.exam-q-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: #1565C0;
-  color: #fff;
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-left: 8px;
-}
-
-/* خيارات MCQ */
-.exam-mcq-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding-right: 32px;
-}
-
-.exam-mcq-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--gray-300);
-  font-size: 0.85rem;
-}
-
-.exam-mcq-option.correct-answer {
-  background: #E8F5E9;
-  border-color: #2E7D32;
-  font-weight: 700;
-}
-
-.exam-option-letter {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-
-.exam-option-letter-أ { background: #FFE0B2; color: #E65100; }
-.exam-option-letter-ب { background: #BBDEFB; color: #1565C0; }
-.exam-option-letter-ج { background: #E1BEE7; color: #6A1B9A; }
-.exam-option-letter-د { background: #C8E6C9; color: #2E7D32; }
-
-/* صح وخطأ */
-.exam-tf-options {
-  display: flex;
-  gap: 20px;
-  padding-right: 32px;
-}
-
-.exam-tf-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--gray-300);
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.exam-tf-option.correct-answer {
-  background: #E8F5E9;
-  border-color: #2E7D32;
-}
-
-.exam-tf-circle {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  flex-shrink: 0;
-}
-
-/* جدول التوصيل */
-.exam-match-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-right: 32px;
-  font-size: 0.85rem;
-}
-
-.exam-match-table th {
-  background: #E3F2FD;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  text-align: center;
-  font-weight: 700;
-}
-
-.exam-match-table td {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  text-align: center;
-}
-
-.exam-match-table tr:nth-child(even) td { background: #FAFAFA; }
-
-.match-answer-line {
-  display: inline-block;
-  width: 40px;
-  border-bottom: 1px solid #333;
-  height: 16px;
+.exam-header-table td {
+  border: 1px solid #555;
+  padding: 5px 8px;
+  font-size: 0.82rem;
   vertical-align: middle;
 }
-
-/* أكمل الفراغات */
-.exam-fill-sentences {
-  padding-right: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.exam-fill-sentence {
-  font-size: 0.88rem;
+.header-school-cell {
+  width: 27%;
+  text-align: center;
   line-height: 2;
+  font-weight: 600;
 }
-
-.exam-fill-blank {
+.header-logo-cell {
+  width: 30%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 8px !important;
+}
+.header-info-cell {
+  width: 43%;
+  text-align: right;
+  font-size: 0.82rem;
+  padding: 5px 10px !important;
+}
+.ministry-logo-img {
+  max-height: 60px;
+  max-width: 100px;
+  object-fit: contain;
+  display: block;
+  margin: 6px auto 0;
+}
+.ministry-logo-placeholder {
   display: inline-block;
-  min-width: 80px;
-  border-bottom: 2px solid #333;
-  margin: 0 4px;
-  height: 20px;
-  vertical-align: bottom;
+  border: 1.5px dashed #1565C0;
+  color: #1565C0;
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 6px 10px;
+  line-height: 1.6;
+  border-radius: 4px;
+  margin-top: 4px;
 }
 
-.exam-fill-blank.answer-shown {
+/* صف اسم الطالب */
+.exam-student-row-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1.5px solid #444;
+  border-top: none;
+  margin-bottom: 14px;
+}
+.exam-student-row-table td {
+  border: 1px solid #555;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+.student-label { width: 18%; font-weight: 700; }
+.student-value { width: 42%; min-height: 28px; }
+.student-score {
+  width: 10%;
+  text-align: center;
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: #1565C0;
+}
+
+/* لافتة نموذج الإجابة */
+.answer-key-banner {
+  background: #E8F5E9;
+  border: 1.5px solid #2E7D32;
   color: #2E7D32;
   font-weight: 700;
-  border-bottom-color: #2E7D32;
-  padding: 0 4px;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 5px;
+  margin-bottom: 10px;
+  border-radius: 4px;
 }
 
-/* الكليشة / الإجابات */
-.answer-key-badge {
-  background: #2E7D32;
-  color: #fff;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+/* رأس القسم */
+.exam-section { margin-bottom: 18px; }
+
+.exam-section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  border: 1.5px solid #333;
+  background: #F5F5F5;
+}
+.exam-section-title {
+  flex: 1;
   font-weight: 700;
-  margin-right: 8px;
+  font-size: 0.88rem;
+  padding: 6px 10px;
+  border-left: 1.5px solid #333;
+}
+.exam-section-marks-badge {
+  background: #E3F2FD;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  text-align: center;
+  white-space: nowrap;
+  color: #1565C0;
+}
+.exam-section-body {
+  border: 1.5px solid #333;
+  border-top: none;
+  padding: 10px 12px;
+}
+
+/* MCQ */
+.mcq-question-block {
+  border: 1px solid #ccc;
+  margin-bottom: 8px;
+}
+.mcq-question-block:last-child { margin-bottom: 0; }
+.mcq-q-text {
+  padding: 6px 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+  line-height: 1.6;
+}
+.mcq-num { font-weight: 900; margin-left: 4px; }
+.mcq-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  border-top: none;
+}
+.mcq-opt-cell {
+  padding: 5px 8px;
+  font-size: 0.83rem;
+  border-right: 1px solid #ddd;
+  text-align: right;
+}
+.mcq-opt-cell:first-child { border-right: none; }
+.correct-opt { background: #E8F5E9; font-weight: 700; }
+.opt-letter { font-weight: 700; color: #1565C0; margin-left: 3px; }
+
+/* صح وخطأ - جدول */
+.tf-exam-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tf-exam-table th {
+  background: #F5F5F5;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border: 1px solid #555;
+  text-align: center;
+}
+.tf-exam-table td {
+  border: 1px solid #555;
+  font-size: 0.85rem;
+  padding: 7px 8px;
+}
+.tf-answer-col { width: 20%; text-align: center; }
+.tf-statement-col { text-align: right; }
+.tf-num-col { width: 8%; text-align: center; }
+.tf-answer-cell { text-align: center; font-size: 0.9rem; }
+.tf-num-cell { text-align: center; font-weight: 700; }
+
+/* التوصيل - جدول */
+.match-exam-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.match-exam-table th {
+  background: #F3E5F5;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border: 1px solid #555;
+  text-align: center;
+}
+.match-exam-table td {
+  border: 1px solid #555;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  text-align: right;
+}
+.match-col-header, .match-answer-col-header { text-align: center; }
+.match-answer-td { text-align: center; color: #666; letter-spacing: 2px; }
+.match-cell { text-align: right; }
+
+/* أكمل الفراغات */
+.fill-block { padding: 6px 4px; }
+.fill-word-bank {
+  background: #FFFDE7;
+  border: 1px solid #F9A825;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.fill-sentences { display: flex; flex-direction: column; gap: 6px; }
+.fill-sent { font-size: 0.88rem; line-height: 2; }
+.fill-blank {
+  display: inline-block;
+  min-width: 70px;
+  border-bottom: 1.5px solid #333;
+  margin: 0 4px;
+  vertical-align: bottom;
+}
+.fill-answer-shown {
+  background: #E8F5E9;
+  color: #2E7D32;
+  font-weight: 700;
+  padding: 0 4px;
+  border-bottom-color: #2E7D32;
 }
 
 /* التذييل */
-.exam-footer {
-  margin-top: 30px;
-  padding-top: 16px;
-  border-top: 2px solid #1565C0;
+.exam-footer-row {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1.5px solid #333;
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
-  color: #666;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #555;
 }
+.exam-end-label { font-weight: 700; font-size: 0.9rem; color: #222; }
+
+/* زر رفع الشعار */
+.logo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background var(--transition);
+}
+.logo-upload-btn:hover { background: var(--primary-dark); }
 
 /* ===== نافذة تعديل السؤال ===== */
 .modal-overlay {
@@ -1233,35 +1148,8 @@ body {
   margin-top: 4px;
 }
 
-/* ===== الطباعة / PDF ===== */
-@media print {
-  body * { visibility: hidden; }
-  #print-area, #print-area * { visibility: visible; }
-  #print-area {
-    position: absolute;
-    inset: 0;
-    background: #fff;
-  }
-
-  .exam-paper {
-    box-shadow: none;
-    border-radius: 0;
-    padding: 20mm;
-    max-width: none;
-    margin: 0;
-    font-size: 11pt;
-  }
-
-  .exam-header-table { font-size: 10pt; }
-  .exam-q-text { font-size: 10.5pt; }
-  .exam-mcq-options { font-size: 10pt; }
-  .no-print { display: none !important; }
-
-  @page {
-    margin: 15mm;
-    size: A4;
-  }
-}
+/* الطباعة: لا تحتاج لـ @media print لأن PDF يُفتح في نافذة منفصلة */
+.no-print { /* تُستخدم لإخفاء عناصر من المعاينة عند الحاجة */ }
 
 /* ===== شريط الحالة السفلي ===== */
 .eb-status-bar {
