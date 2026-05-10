@@ -198,9 +198,9 @@ ${text.slice(0, 7500)}`
   // ───────────────────────────────────────────────
   function _showStep1() {
     _removeModal();
-    if (!window.CURRICULUM) { alert('لم تُحمَّل بيانات المنهج بعد، أعد تحميل الصفحة'); return; }
+    if (!CURRICULUM) { alert('لم تُحمَّل بيانات المنهج بعد، أعد تحميل الصفحة'); return; }
 
-    const grades = Object.entries(window.CURRICULUM);
+    const grades = Object.entries(CURRICULUM);
     const savedKey = sessionStorage.getItem(API_KEY_SESS) || '';
 
     const modal = document.createElement('div');
@@ -575,8 +575,8 @@ ${text.slice(0, 7500)}`
     semSel.innerHTML = '<option value="">— الفصل —</option>';
     semSel.disabled  = !grade;
 
-    if (grade && window.CURRICULUM[grade]) {
-      window.CURRICULUM[grade].semesters.forEach((s, i) => {
+    if (grade && CURRICULUM[grade]) {
+      CURRICULUM[grade].semesters.forEach((s, i) => {
         semSel.innerHTML += `<option value="${i}">${s.name}</option>`;
       });
     }
@@ -595,8 +595,8 @@ ${text.slice(0, 7500)}`
     unitSel.innerHTML = '<option value="">— الوحدة —</option>';
     unitSel.disabled  = true;
 
-    if (grade && semIdx !== '' && window.CURRICULUM[grade]) {
-      const sem = window.CURRICULUM[grade].semesters[+semIdx];
+    if (grade && semIdx !== '' && CURRICULUM[grade]) {
+      const sem = CURRICULUM[grade].semesters[+semIdx];
       if (sem) {
         sem.units.forEach((u, i) => {
           unitSel.innerHTML += `<option value="${i}">${u.name}</option>`;
@@ -616,8 +616,8 @@ ${text.slice(0, 7500)}`
     const semIdx  = document.getElementById('pim-sem')?.value;
     const unitIdx = document.getElementById('pim-unit')?.value;
 
-    if (grade && semIdx !== '' && unitIdx !== '' && window.CURRICULUM[grade]) {
-      const unit = window.CURRICULUM[grade].semesters[+semIdx]?.units[+unitIdx];
+    if (grade && semIdx !== '' && unitIdx !== '' && CURRICULUM[grade]) {
+      const unit = CURRICULUM[grade].semesters[+semIdx]?.units[+unitIdx];
       if (unit) {
         unit.lessons.forEach((l, i) => {
           sel.innerHTML += `<option value="${i}">${l.name}</option>`;
@@ -759,14 +759,14 @@ ${text.slice(0, 7500)}`
 
     // ── بناء كائن الدرس ──
     const existingId = (mode === 'replace' && replIdx != null)
-      ? window.CURRICULUM[grade].semesters[semIdx].units[unitIdx].lessons[replIdx]?.id
+      ? CURRICULUM[grade].semesters[semIdx].units[unitIdx].lessons[replIdx]?.id
       : null;
     const lessonId = existingId || `custom_${Date.now()}`;
 
     const newLesson = { id: lessonId, name, objectives, summary, keyPoints, questions };
 
     // ── تطبيق على CURRICULUM ──
-    const unit = window.CURRICULUM[grade].semesters[semIdx].units[unitIdx];
+    const unit = CURRICULUM[grade].semesters[semIdx].units[unitIdx];
     if (mode === 'replace' && replIdx != null) {
       unit.lessons[replIdx] = newLesson;
     } else {
@@ -775,7 +775,7 @@ ${text.slice(0, 7500)}`
 
     // ── الحفظ في localStorage (والتزامن مع Firebase إن أمكن) ──
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(window.CURRICULUM));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(CURRICULUM));
     } catch (e) {
       if (e.name === 'QuotaExceededError') {
         return _setError('مساحة التخزين ممتلئة! قلّل عدد الصور المختارة أو أزل دروساً مخصصة قديمة من لوحة التحكم.');
@@ -785,11 +785,11 @@ ${text.slice(0, 7500)}`
 
     // محاولة الرفع لـ Firebase إن كان متاحاً
     if (window.FirebaseDB?.dbSaveCurriculum && window.FirebaseDB?.isFirebaseActive?.()) {
-      window.FirebaseDB.dbSaveCurriculum(window.CURRICULUM);
+      window.FirebaseDB.dbSaveCurriculum(CURRICULUM);
     }
 
     _removeModal();
-    _showToast(`✅ تم حفظ درس "${name}" في ${window.CURRICULUM[grade].name}`);
+    _showToast(`✅ تم حفظ درس "${name}" في ${CURRICULUM[grade].name}`);
     setTimeout(() => location.reload(), 1800);
   }
 
