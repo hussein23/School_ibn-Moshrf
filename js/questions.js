@@ -19,6 +19,7 @@ function renderMCQ(q,num,color){const letters=['أ','ب','ج','د'];const letter
         <span class="q-type-label">اختر الإجابة الصحيحة</span>
       </div>
       <p class="q-main-text">${_esc(q.question)}</p>
+      ${q.image?`<div class="q-img-wrap"><img class="q-img" src="${_esc(q.image)}" alt="صورة السؤال" loading="lazy"></div>`:''}
       <div class="mcq-grid">${opts}</div>
       <div class="q-result hidden" id="qres-${num}"></div>
     </div>
@@ -34,6 +35,7 @@ function renderTF(q,num,color){return`
         <span class="q-type-label">صح أم خطأ؟</span>
       </div>
       <p class="q-main-text tf-statement">${_esc(q.question)}</p>
+      ${q.image?`<div class="q-img-wrap"><img class="q-img" src="${_esc(q.image)}" alt="صورة السؤال" loading="lazy"></div>`:''}
       <div class="tf-big-row">
         <button class="tf-big-card tf-big-true" id="tf-${num}-true"
                 onclick="selectTF(${num}, true)">
