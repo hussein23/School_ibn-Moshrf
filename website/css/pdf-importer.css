@@ -1,0 +1,604 @@
+/* =====================================================
+   مستورد دروس PDF — أنماط الواجهة
+   ===================================================== */
+
+/* ── Overlay (الغطاء الخلفي) ── */
+.pim-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  direction: rtl;
+  font-family: 'Cairo', 'Segoe UI', sans-serif;
+  animation: pimFadeIn 0.2s ease;
+}
+
+@keyframes pimFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── الصندوق الرئيسي ── */
+.pim-box {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+  animation: pimSlideUp 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.pim-box-sm  { max-width: 400px; }
+.pim-box-wide { max-width: 760px; }
+
+@keyframes pimSlideUp {
+  from { transform: translateY(40px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ── الهيدر ── */
+.pim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #1565C0, #1976D2);
+  flex-shrink: 0;
+}
+
+.pim-title {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pim-close {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.pim-close:hover { background: rgba(255,255,255,0.35); }
+
+/* ── Body ── */
+.pim-body  { padding: 20px 24px; overflow-y: auto; flex: 1; }
+.pim-scroll { overflow-y: auto; }
+
+/* ── الأقسام ── */
+.pim-section {
+  margin-bottom: 20px;
+}
+
+.pim-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── شارة الأمان ── */
+.pim-badge-safe {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #E8F5E9;
+  color: #2E7D32;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid #A5D6A7;
+}
+
+.pim-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #888;
+}
+
+.pim-note {
+  font-size: 0.76rem;
+  color: #F57C00;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  background: #FFF8E1;
+  border-radius: 8px;
+  border-right: 3px solid #F57C00;
+}
+
+/* ── حقل الإدخال ── */
+.pim-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #E3E8F0;
+  border-radius: 10px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.88rem;
+  color: #1a1a2e;
+  background: #FAFBFF;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.pim-input:focus {
+  outline: none;
+  border-color: #1976D2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+  background: #fff;
+}
+
+.pim-input-lg { font-size: 1rem; font-weight: 700; padding: 12px 14px; }
+
+/* ── حقل مفتاح API ── */
+.pim-api-wrap {
+  display: flex;
+  gap: 8px;
+}
+.pim-api-wrap .pim-input { direction: ltr; letter-spacing: 1px; flex: 1; }
+.pim-eye-btn {
+  background: #F5F5F5;
+  border: 2px solid #E3E8F0;
+  border-radius: 10px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.pim-eye-btn:hover { background: #EEE; }
+
+/* ── منطقة السحب والإفلات ── */
+.pim-dropzone {
+  border: 2px dashed #90CAF9;
+  border-radius: 14px;
+  background: #F5F9FF;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.pim-dropzone:hover,
+.pim-dz-over {
+  border-color: #1976D2;
+  background: #E3F2FD;
+  transform: translateY(-2px);
+}
+.pim-dz-ready  {
+  border-color: #43A047;
+  background: #E8F5E9;
+}
+.pim-dz-icon   { font-size: 2.4rem; margin-bottom: 8px; }
+.pim-dz-text   { font-size: 0.9rem; font-weight: 700; color: #1565C0; }
+.pim-dz-hint   { font-size: 0.76rem; color: #90A4AE; margin-top: 4px; }
+
+/* ── القوائم المنسدلة ── */
+.pim-selects-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.pim-select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 2px solid #E3E8F0;
+  border-radius: 10px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.84rem;
+  color: #1a1a2e;
+  background: #FAFBFF;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.pim-select:focus { outline: none; border-color: #1976D2; }
+.pim-select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pim-replace-sel { margin-top: 8px; }
+
+/* ── Radios ── */
+.pim-radios { display: flex; gap: 16px; flex-wrap: wrap; }
+.pim-radio-lbl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  cursor: pointer;
+  color: #333;
+}
+.pim-radio-lbl input[type="radio"] { width: 16px; height: 16px; accent-color: #1976D2; }
+
+/* ── Textarea ── */
+.pim-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #E3E8F0;
+  border-radius: 10px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.88rem;
+  color: #1a1a2e;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  line-height: 1.7;
+}
+.pim-textarea:focus { outline: none; border-color: #1976D2; }
+
+/* ── قائمة الأهداف والنقاط ── */
+.pim-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+
+.pim-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FAFBFF;
+  border: 1px solid #E8EDF5;
+  border-radius: 10px;
+  padding: 6px 10px;
+  transition: box-shadow 0.15s;
+}
+.pim-list-row:focus-within { box-shadow: 0 2px 10px rgba(25,118,210,0.1); }
+
+.pim-list-drag { color: #BCC3CD; font-size: 1.1rem; cursor: grab; user-select: none; }
+.pim-list-inp  { flex: 1; border: none; background: transparent; font-family: 'Cairo', sans-serif; font-size: 0.86rem; padding: 4px 6px; color: #1a1a2e; }
+.pim-list-inp:focus { outline: none; }
+
+/* ── زر الإضافة ── */
+.pim-add-btn {
+  background: none;
+  border: 2px dashed #90CAF9;
+  border-radius: 8px;
+  color: #1976D2;
+  padding: 6px 14px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+.pim-add-btn:hover { background: #E3F2FD; border-color: #1976D2; }
+
+.pim-add-q-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ── زر الحذف ── */
+.pim-del-btn {
+  background: none;
+  border: none;
+  color: #EF5350;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.pim-del-btn:hover { background: #FFEBEE; }
+.pim-del-q { margin-right: auto; }
+
+/* ── شبكة الصور ── */
+.pim-img-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.pim-img-card {
+  border: 2px solid #E3E8F0;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+  background: #F5F5F5;
+}
+.pim-img-card:hover   { border-color: #90CAF9; transform: translateY(-2px); }
+.pim-img-sel          { border-color: #1976D2; box-shadow: 0 4px 16px rgba(25,118,210,0.2); }
+
+.pim-img-thumb {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+}
+
+.pim-img-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  background: #fff;
+  color: #666;
+  font-weight: 600;
+}
+
+/* ── كتلة السؤال ── */
+.pim-q-block {
+  background: #FAFBFF;
+  border: 1px solid #E3E8F0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  transition: box-shadow 0.15s;
+}
+.pim-q-block:focus-within { box-shadow: 0 4px 16px rgba(25,118,210,0.08); border-color: #90CAF9; }
+
+.pim-q-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pim-q-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+.pim-q-txt {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+/* ── خيارات MCQ ── */
+.pim-opts { display: flex; flex-direction: column; gap: 6px; }
+.pim-opt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #E8EDF5;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.pim-opt-row input[type="radio"] { accent-color: #1976D2; width: 16px; height: 16px; flex-shrink: 0; }
+.pim-opt-inp { flex: 1; border: none; background: transparent; font-family: 'Cairo', sans-serif; font-size: 0.86rem; color: #1a1a2e; }
+.pim-opt-inp:focus { outline: none; }
+
+/* ── صح / خطأ ── */
+.pim-tf-row { display: flex; gap: 16px; margin-top: 8px; }
+
+/* ── أزواج المطابقة ── */
+.pim-pairs { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.pim-pair-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pim-pair-row .pim-input { flex: 1; }
+.pim-pair-arrow { color: #90A4AE; font-size: 1rem; flex-shrink: 0; }
+
+/* ── صورة مرفقة بالسؤال ── */
+.pim-q-img-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pim-q-img-row .pim-hint { flex-shrink: 0; }
+.pim-q-img-sel { max-width: 220px; }
+
+/* ── رسالة الخطأ ── */
+.pim-error {
+  background: #FFEBEE;
+  border: 1px solid #FFCDD2;
+  border-radius: 10px;
+  color: #C62828;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 14px;
+  margin-top: 12px;
+}
+
+/* ── Footer الأزرار ── */
+.pim-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #F0F0F0;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.pim-btn {
+  padding: 10px 22px;
+  border-radius: 30px;
+  border: none;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.pim-btn-primary {
+  background: linear-gradient(135deg, #1565C0, #1976D2);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(21,101,192,0.35);
+}
+.pim-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(21,101,192,0.45); }
+
+.pim-btn-ghost {
+  background: #F5F5F5;
+  color: #666;
+}
+.pim-btn-ghost:hover { background: #EEE; color: #333; }
+
+.pim-btn-warn {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FFCC80;
+}
+.pim-btn-warn:hover { background: #FFE0B2; }
+
+/* ── Spinner ── */
+.pim-spinner {
+  width: 52px;
+  height: 52px;
+  border: 5px solid #E3F2FD;
+  border-top-color: #1976D2;
+  border-radius: 50%;
+  animation: pimSpin 0.8s linear infinite;
+  margin: 0 auto 20px;
+}
+@keyframes pimSpin { to { transform: rotate(360deg); } }
+
+.pim-proc-msg {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1565C0;
+  margin: 0;
+}
+
+/* ── Toast إشعار النجاح ── */
+.pim-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1565C0;
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 30px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  z-index: 12000;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  animation: pimFadeIn 0.3s ease;
+  transition: opacity 0.5s ease;
+}
+.pim-toast-hide { opacity: 0; }
+
+/* ── Dark mode ── */
+[data-theme="dark"] .pim-box,
+body.dark-mode .pim-box {
+  background: #1E2235;
+  color: #E0E6F0;
+}
+[data-theme="dark"] .pim-input,
+body.dark-mode .pim-input {
+  background: #262C40;
+  border-color: #3A4260;
+  color: #E0E6F0;
+}
+[data-theme="dark"] .pim-select,
+body.dark-mode .pim-select {
+  background: #262C40;
+  border-color: #3A4260;
+  color: #E0E6F0;
+}
+[data-theme="dark"] .pim-textarea,
+body.dark-mode .pim-textarea {
+  background: #262C40;
+  border-color: #3A4260;
+  color: #E0E6F0;
+}
+[data-theme="dark"] .pim-q-block,
+body.dark-mode .pim-q-block {
+  background: #262C40;
+  border-color: #3A4260;
+}
+[data-theme="dark"] .pim-list-row,
+body.dark-mode .pim-list-row {
+  background: #262C40;
+  border-color: #3A4260;
+}
+[data-theme="dark"] .pim-dropzone,
+body.dark-mode .pim-dropzone {
+  background: #222740;
+  border-color: #3A5080;
+}
+[data-theme="dark"] .pim-label,
+body.dark-mode .pim-label {
+  color: #C8D6F0;
+}
+[data-theme="dark"] .pim-opt-row,
+body.dark-mode .pim-opt-row {
+  background: #1E2235;
+  border-color: #3A4260;
+}
+[data-theme="dark"] .pim-img-foot,
+body.dark-mode .pim-img-foot {
+  background: #262C40;
+  color: #AAB4C8;
+}
+[data-theme="dark"] .pim-section,
+body.dark-mode .pim-section {
+  border-color: #3A4260;
+}
+
+/* ── صور الأسئلة (مُولَّدة من PDF) ── */
+.q-img-wrap {
+  margin: 10px 0 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #E3E8F0;
+  background: #F8FAFF;
+  text-align: center;
+}
+.q-img {
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  padding: 6px;
+}
+.match-q-img-wrap {
+  margin: 10px 0 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #E3E8F0;
+  text-align: center;
+}
+.match-q-img {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  padding: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .pim-selects-row   { grid-template-columns: 1fr; }
+  .pim-box-wide      { max-width: 100%; }
+  .pim-footer        { flex-direction: column-reverse; }
+  .pim-btn           { width: 100%; text-align: center; }
+  .pim-img-grid      { grid-template-columns: repeat(2, 1fr); }
+  .pim-add-q-row     { flex-direction: column; }
+}
