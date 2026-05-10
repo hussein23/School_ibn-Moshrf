@@ -108,6 +108,14 @@
           transition: all 0.2s;
           white-space: nowrap;
         }
+        #teacher-toolbar .tb-btn-pdf {
+          background: #43A047;
+          color: #fff;
+        }
+        #teacher-toolbar .tb-btn-pdf:hover {
+          background: #388E3C;
+          transform: translateY(-1px);
+        }
         #teacher-toolbar .tb-btn-exam {
           background: #fff;
           color: #1565C0;
@@ -135,6 +143,9 @@
         }
       </style>
       <span class="tb-label">👨‍🏫 وضع المعلم</span>
+      <button class="tb-btn tb-btn-pdf" onclick="window.PdfImporter&&window.PdfImporter.open()">
+        📤 رفع درس PDF
+      </button>
       <a class="tb-btn tb-btn-exam" href="exam-builder.html" target="_blank">
         📋 منشئ الاختبار
       </a>
