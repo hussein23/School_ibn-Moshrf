@@ -22,6 +22,8 @@
 
   // ───────────────────────────────────────────────
   //  تحميل PDF.js ديناميكياً (فقط عند الحاجة)
+  //  نستخدم Blob URL للـ Worker لتجاوز قيود CORS
+  //  على GitHub Pages والمواقع المستضافة على HTTPS
   // ───────────────────────────────────────────────
   function _loadPdfJs() {
     return new Promise((resolve, reject) => {
@@ -29,10 +31,21 @@
       const s = document.createElement('script');
       s.src = PDFJS_SRC;
       s.onload = () => {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        // Blob URL trick: يتجاوز قيود CORS بإنشاء worker محلي
+        // يقوم باستيراد الـ worker من CDN
+        try {
+          const blob = new Blob(
+            [`importScripts('${PDFJS_WORKER}');`],
+            { type: 'application/javascript' }
+          );
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+        } catch (e) {
+          // fallback: استخدام CDN مباشرةً إذا فشل Blob
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        }
         resolve();
       };
-      s.onerror = () => reject(new Error('تعذّر تحميل مكتبة PDF.js'));
+      s.onerror = () => reject(new Error('تعذّر تحميل مكتبة PDF.js — تحقق من اتصال الإنترنت'));
       document.head.appendChild(s);
     });
   }
@@ -715,9 +728,15 @@ ${text.slice(0, 7500)}`
         if (el) el.textContent = msg;
       });
 
-      if (!text || text.trim().length < 30) {
+      const cleanText = (text || '').trim();
+      if (cleanText.length < 5) {
         _showStep1();
-        _setError('لم يُعثَر على نصوص كافية في الملف. تأكد أن PDF يحتوي نصوصاً قابلة للاستخراج (وليس صوراً فقط).');
+        _setError(
+          'لم يتمكن البرنامج من قراءة النصوص من هذا الملف.\n\n' +
+          'الأسباب الشائعة:\n' +
+          '• الملف عبارة عن صور ممسوحة ضوئياً (Scanned PDF) — يجب أن يحتوي PDF على نصوص قابلة للنسخ\n' +
+          '• جرّب فتح الملف في Adobe Reader وتحقق من إمكانية تحديد النص بالماوس'
+        );
         return;
       }
 
