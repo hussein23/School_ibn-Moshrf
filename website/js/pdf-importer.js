@@ -51,6 +51,15 @@
   }
 
   // ───────────────────────────────────────────────
+  //  قراءة ملف Markdown مباشرةً (نص خالص)
+  // ───────────────────────────────────────────────
+  async function _parseMd(file, onStatus) {
+    onStatus?.('📝 قراءة ملف Markdown...');
+    const text = await file.text();
+    return { text, images: [] };
+  }
+
+  // ───────────────────────────────────────────────
   //  استخراج النصوص والصور من PDF
   // ───────────────────────────────────────────────
   async function _parsePdf(file, onStatus) {
@@ -251,11 +260,11 @@ ${text.slice(0, 7500)}`
               ondragleave="this.classList.remove('pim-dz-over')"
               ondrop="window.PdfImporter._onDrop(event)"
               onclick="document.getElementById('pim-file').click()">
-              <input type="file" id="pim-file" accept=".pdf" style="display:none"
+              <input type="file" id="pim-file" accept=".pdf,.md" style="display:none"
                 onchange="window.PdfImporter._onFileChange(this)">
               <div class="pim-dz-icon">📄</div>
-              <div id="pim-dz-text" class="pim-dz-text">اسحب ملف PDF هنا أو اضغط للاختيار</div>
-              <div class="pim-dz-hint">يدعم ملفات PDF التي تحتوي نصوصاً قابلة للاستخراج</div>
+              <div id="pim-dz-text" class="pim-dz-text">اسحب الملف هنا أو اضغط للاختيار</div>
+              <div class="pim-dz-hint">يدعم ملفات PDF و Markdown ‎(.md)</div>
             </div>
           </div>
 
@@ -548,15 +557,20 @@ ${text.slice(0, 7500)}`
   function _onFileChange(inp) {
     const f = inp.files?.[0];
     if (!f) return;
-    if (f.type !== 'application/pdf') {
-      _setError('الملف يجب أن يكون بصيغة PDF'); return;
+
+    const isPdf = f.type === 'application/pdf' || f.name.endsWith('.pdf');
+    const isMd  = f.type === 'text/markdown' || f.type === 'text/plain' || f.name.endsWith('.md');
+
+    if (!isPdf && !isMd) {
+      _setError('نوع الملف غير مدعوم — اختر ملف PDF أو Markdown (md.)'); return;
     }
     if (f.size > 20 * 1024 * 1024) {
       _setError('حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت)'); return;
     }
     _file = f;
+    const icon = isMd ? '📝' : '📄';
     const txt = document.getElementById('pim-dz-text');
-    if (txt) txt.textContent = `✅ ${f.name} (${(f.size / 1024).toFixed(0)} KB)`;
+    if (txt) txt.textContent = `✅ ${icon} ${f.name} (${(f.size / 1024).toFixed(0)} KB)`;
     document.getElementById('pim-dz')?.classList.add('pim-dz-ready');
     _clearError();
   }
@@ -710,7 +724,7 @@ ${text.slice(0, 7500)}`
     // ── التحقق من المدخلات ──
     if (!apiKey)                              return _setError('أدخل مفتاح Claude API');
     if (!apiKey.startsWith('sk-'))            return _setError('مفتاح API يجب أن يبدأ بـ sk-');
-    if (!_file)                               return _setError('اختر ملف PDF أولاً');
+    if (!_file)                               return _setError('اختر ملف PDF أو Markdown أولاً');
     if (!grade)                               return _setError('اختر الصف الدراسي');
     if (semIdx === '' || semIdx == null)       return _setError('اختر الفصل الدراسي');
     if (unitIdx === '' || unitIdx == null)     return _setError('اختر الوحدة الدراسية');
@@ -720,10 +734,13 @@ ${text.slice(0, 7500)}`
     sessionStorage.setItem(API_KEY_SESS, apiKey);
     _target = { grade, semIdx: +semIdx, unitIdx: +unitIdx, mode, replIdx: replIdx != null ? +replIdx : null };
 
-    try {
-      _showProcessing('📄 قراءة ملف PDF...');
+    const isMd = _file.name.endsWith('.md');
 
-      const { text, images } = await _parsePdf(_file, msg => {
+    try {
+      _showProcessing(isMd ? '📝 قراءة ملف Markdown...' : '📄 قراءة ملف PDF...');
+
+      const parser = isMd ? _parseMd : _parsePdf;
+      const { text, images } = await parser(_file, msg => {
         const el = document.getElementById('pim-proc-msg');
         if (el) el.textContent = msg;
       });
