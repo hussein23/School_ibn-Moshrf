@@ -8,7 +8,15 @@
 
   const PDFJS_SRC    = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
   const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  const GEMINI_BASE  = 'https://generativelanguage.googleapis.com/v1beta/models';
+  // قائمة الموديلات مرتّبة من الأحدث للأقدم — يُجرَّب الأول ثم الثاني...
+  const GEMINI_MODELS = [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-8b-latest',
+    'gemini-pro'
+  ];
   const API_KEY_SESS = 'ibn_gemini_api_key';
   const STORAGE_KEY  = 'ibn_moshrf_curriculum';
   const MAX_IMG_DIM  = 650;
@@ -176,55 +184,76 @@ ${text.slice(0, 8000)}`;
     });
     parts.push({ text: prompt });
 
-    // مهلة 90 ثانية
-    const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 90_000);
+    // تجريب كل موديل بالترتيب حتى يعمل أحدها
+    let lastError = null;
 
-    let res;
-    try {
-      res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 4096,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-    } catch (netErr) {
-      clearTimeout(timeout);
-      if (netErr.name === 'AbortError') {
-        throw new Error('انتهت مهلة الاتصال (90 ثانية) — تحقق من اتصالك بالإنترنت وأعد المحاولة');
+    for (const model of GEMINI_MODELS) {
+      const url = `${GEMINI_BASE}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+      // gemini-pro لا يدعم responseMimeType — نستخدم generationConfig مبسّط له
+      const isLegacy = model === 'gemini-pro';
+      const genConfig = isLegacy
+        ? { temperature: 0.4, maxOutputTokens: 4096 }
+        : { temperature: 0.4, maxOutputTokens: 4096, responseMimeType: 'application/json' };
+
+      // مهلة 90 ثانية لكل موديل
+      const controller = new AbortController();
+      const timeout    = setTimeout(() => controller.abort(), 90_000);
+
+      let res;
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: genConfig
+          })
+        });
+      } catch (netErr) {
+        clearTimeout(timeout);
+        if (netErr.name === 'AbortError') {
+          throw new Error('انتهت مهلة الاتصال (90 ثانية) — تحقق من اتصالك بالإنترنت وأعد المحاولة');
+        }
+        throw new Error('تعذّر الاتصال بالخادم — تحقق من اتصال الإنترنت وأعد المحاولة');
+      } finally {
+        clearTimeout(timeout);
       }
-      throw new Error('تعذّر الاتصال بالخادم — تحقق من اتصال الإنترنت وأعد المحاولة');
-    } finally {
-      clearTimeout(timeout);
+
+      // 404 = الموديل غير متاح — جرّب التالي
+      if (res.status === 404) {
+        console.warn(`[PdfImporter] الموديل ${model} غير متاح، جاري تجريب التالي...`);
+        lastError = new Error(`الموديل ${model} غير متاح في منطقتك`);
+        continue;
+      }
+
+      // أخطاء المفتاح / الصلاحية — لا فائدة من تجريب موديل آخر
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = err.error?.message || '';
+        if (res.status === 400) throw new Error('مفتاح API غير صحيح — تحقق من المفتاح في aistudio.google.com');
+        if (res.status === 403) throw new Error('المفتاح لا يملك صلاحية — تأكد من تفعيل Gemini API في مشروعك');
+        if (res.status === 429) throw new Error('تجاوزت حد الطلبات المجانية — انتظر دقيقة وأعد المحاولة');
+        if (res.status >= 500) throw new Error('خادم Gemini لا يستجيب — أعد المحاولة بعد قليل');
+        throw new Error(msg || `خطأ ${res.status}`);
+      }
+
+      // نجح الطلب — استخرج الرد
+      const data = await res.json();
+      const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!raw) throw new Error('لم يُرجع الذكاء الاصطناعي أي محتوى — أعد المحاولة');
+
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      try {
+        return JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      } catch {
+        throw new Error('خطأ في قراءة الاستجابة — أعد المحاولة');
+      }
     }
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = err.error?.message || '';
-      if (res.status === 400) throw new Error('مفتاح API غير صحيح — تحقق من المفتاح في aistudio.google.com');
-      if (res.status === 403) throw new Error('المفتاح لا يملك صلاحية — تأكد من تفعيل Gemini API في مشروعك');
-      if (res.status === 429) throw new Error('تجاوزت حد الطلبات المجانية — انتظر دقيقة وأعد المحاولة');
-      if (res.status >= 500) throw new Error('خادم Gemini لا يستجيب — أعد المحاولة بعد قليل');
-      throw new Error(msg || `خطأ ${res.status}`);
-    }
-
-    const data = await res.json();
-    const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!raw) throw new Error('لم يُرجع الذكاء الاصطناعي أي محتوى — أعد المحاولة');
-
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    try {
-      return JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-    } catch {
-      throw new Error('خطأ في قراءة الاستجابة — أعد المحاولة');
-    }
+    // جميع الموديلات فشلت
+    throw lastError || new Error('جميع موديلات Gemini غير متاحة في منطقتك — تحقق من حساب Google AI Studio');
   }
 
   // ───────────────────────────────────────────────
