@@ -129,6 +129,408 @@
   }
 
   // ───────────────────────────────────────────────
+  //  قراءة ملف HTML (قالب الدرس) — بدون ذكاء اصطناعي
+  // ───────────────────────────────────────────────
+  async function _parseHtml(file) {
+    const html = await file.text();
+    const doc  = new DOMParser().parseFromString(html, 'text/html');
+    const el   = doc.getElementById('lesson-data');
+
+    if (!el) throw new Error(
+      'لم يُعثَر على بيانات الدرس في الملف\n\n' +
+      'تأكد أن الملف تم إنشاؤه من قالب مدرسة ابن المشرف ' +
+      '(يحتوي على <script id="lesson-data">)'
+    );
+
+    let data;
+    try { data = JSON.parse(el.textContent.trim()); }
+    catch { throw new Error('خطأ في تنسيق البيانات داخل الملف — تحقق من أقواس JSON'); }
+
+    if (!data.name)      throw new Error('حقل "name" (اسم الدرس) مفقود في البيانات');
+    if (!data.questions) throw new Error('حقل "questions" (الأسئلة) مفقود في البيانات');
+
+    return data;
+  }
+
+  // ───────────────────────────────────────────────
+  //  تحميل قالب HTML جاهز للتعديل
+  // ───────────────────────────────────────────────
+  function _downloadTemplate() {
+    const tpl = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اسم الدرس — مدرسة ابن المشرف</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #f0f4f8;
+      color: #1a1a2e;
+      direction: rtl;
+      padding: 24px 16px 60px;
+    }
+    .lesson-card {
+      max-width: 820px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .lesson-header {
+      background: linear-gradient(135deg, #1565C0, #1976D2);
+      color: #fff;
+      padding: 32px 36px 28px;
+    }
+    .lesson-meta {
+      font-size: .8rem;
+      opacity: .75;
+      margin-bottom: 8px;
+      letter-spacing: .3px;
+    }
+    .lesson-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+    .lesson-body { padding: 32px 36px; }
+    section { margin-bottom: 32px; }
+    section h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1565C0;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #E3F2FD;
+    }
+    ul { padding-right: 20px; }
+    ul li {
+      margin-bottom: 6px;
+      font-size: .92rem;
+      line-height: 1.7;
+    }
+    .summary-text {
+      font-size: .93rem;
+      line-height: 1.85;
+      color: #444;
+      background: #f8fafc;
+      border-right: 4px solid #1976D2;
+      padding: 14px 18px;
+      border-radius: 0 10px 10px 0;
+    }
+    .kp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .kp-card {
+      background: #F3F6FD;
+      border-radius: 12px;
+      padding: 14px 16px;
+      border: 1px solid #DCEEFB;
+    }
+    .kp-term {
+      font-weight: 700;
+      color: #1565C0;
+      font-size: .9rem;
+      margin-bottom: 4px;
+    }
+    .kp-en {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: .78rem;
+      color: #888;
+      font-weight: 400;
+      direction: ltr;
+      display: inline-block;
+    }
+    .kp-def { font-size: .85rem; color: #555; line-height: 1.5; }
+    .q-block {
+      background: #fafbfc;
+      border: 1px solid #e8edf2;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+    }
+    .q-num {
+      font-size: .72rem;
+      font-weight: 700;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .q-text { font-weight: 600; font-size: .93rem; margin-bottom: 10px; }
+    .q-options { list-style: none; padding: 0; }
+    .q-options li {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: .88rem;
+      margin-bottom: 4px;
+      background: #fff;
+      border: 1px solid #e0e7ef;
+    }
+    .q-options li.correct { background: #E8F5E9; border-color: #A5D6A7; color: #2E7D32; font-weight: 700; }
+    .q-pairs { display: flex; flex-direction: column; gap: 6px; }
+    .q-pair {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .88rem;
+    }
+    .q-pair .term {
+      background: #E3F2FD;
+      color: #1565C0;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      min-width: 80px;
+      text-align: center;
+    }
+    .q-pair .def {
+      background: #FFF8E1;
+      color: #F57F17;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .import-notice {
+      margin-top: 40px;
+      padding: 16px 20px;
+      background: #E8F5E9;
+      border: 1.5px dashed #A5D6A7;
+      border-radius: 12px;
+      font-size: .82rem;
+      color: #2E7D32;
+      text-align: center;
+      line-height: 1.7;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .lesson-card { box-shadow: none; }
+      .import-notice { display: none; }
+    }
+  </style>
+</head>
+<body>
+<!--
+╔══════════════════════════════════════════════════════════════════╗
+║        قالب درس — مدرسة ابن المشرف للمهارات الرقمية             ║
+║                                                                  ║
+║  طريقة الاستخدام:                                                ║
+║  1. افتح الملف بأي محرر نص (Notepad, VS Code, Notepad++)        ║
+║  2. عدّل القسم المرئي (بين <body> و </body>)                     ║
+║  3. عدّل بيانات JSON في <script id="lesson-data"> لتطابق المحتوى ║
+║  4. ارفع الملف من زر "رفع درس" في شريط المعلم                   ║
+╚══════════════════════════════════════════════════════════════════╝
+-->
+
+<div class="lesson-card">
+
+  <!-- ══════════ رأس الدرس ══════════ -->
+  <div class="lesson-header">
+    <div class="lesson-meta">الصف الرابع الابتدائي — الفصل الأول — الوحدة الأولى</div>
+    <div class="lesson-title">مكونات الحاسوب</div>
+  </div>
+
+  <div class="lesson-body">
+
+    <!-- ══════════ الأهداف ══════════ -->
+    <section>
+      <h2>🎯 أهداف الدرس</h2>
+      <ul>
+        <li>يتعرّف الطالب على المكونات الأساسية للحاسوب</li>
+        <li>يميّز بين وحدات الإدخال ووحدات الإخراج</li>
+        <li>يستخدم المصطلحات التقنية الصحيحة باللغتين</li>
+        <li>يربط كل مكوّن بوظيفته</li>
+      </ul>
+    </section>
+
+    <!-- ══════════ الملخص ══════════ -->
+    <section>
+      <h2>📖 ملخص الدرس</h2>
+      <p class="summary-text">
+        الحاسوب جهاز إلكتروني ذكي يتكوّن من مجموعة من المكونات التي تعمل معاً بتناسق.
+        تنقسم هذه المكونات إلى وحدات إدخال مثل لوحة المفاتيح والفأرة،
+        ووحدات إخراج مثل الشاشة والطابعة، ووحدات معالجة مثل المعالج والذاكرة.
+        يتحكم المعالج في جميع العمليات ويُنسّق بين المكونات المختلفة.
+      </p>
+    </section>
+
+    <!-- ══════════ المفاهيم والمصطلحات ══════════ -->
+    <section>
+      <h2>🔑 المفاهيم والمصطلحات</h2>
+      <div class="kp-grid">
+        <div class="kp-card">
+          <div class="kp-term">الحاسوب <span class="kp-en">Computer</span></div>
+          <div class="kp-def">جهاز إلكتروني يعالج البيانات وينفّذ التعليمات</div>
+        </div>
+        <div class="kp-card">
+          <div class="kp-term">المعالج <span class="kp-en">CPU</span></div>
+          <div class="kp-def">عقل الحاسوب الذي يتحكم في جميع العمليات</div>
+        </div>
+        <div class="kp-card">
+          <div class="kp-term">الذاكرة <span class="kp-en">RAM</span></div>
+          <div class="kp-def">تخزين مؤقت للبيانات أثناء تشغيل البرامج</div>
+        </div>
+        <div class="kp-card">
+          <div class="kp-term">وحدة الإدخال <span class="kp-en">Input</span></div>
+          <div class="kp-def">تُدخل البيانات إلى الحاسوب (لوحة مفاتيح، فأرة)</div>
+        </div>
+        <div class="kp-card">
+          <div class="kp-term">وحدة الإخراج <span class="kp-en">Output</span></div>
+          <div class="kp-def">تُخرج نتائج المعالجة (شاشة، طابعة)</div>
+        </div>
+        <div class="kp-card">
+          <div class="kp-term">التخزين <span class="kp-en">Storage</span></div>
+          <div class="kp-def">حفظ البيانات بشكل دائم (قرص صلب، USB)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ الأسئلة ══════════ -->
+    <section>
+      <h2>❓ أسئلة الدرس</h2>
+
+      <!-- س1: اختيار متعدد -->
+      <div class="q-block">
+        <div class="q-num">اختيار متعدد — 1</div>
+        <div class="q-text">ما هو عقل الحاسوب الذي يتحكم في جميع العمليات؟</div>
+        <ul class="q-options">
+          <li>الشاشة</li>
+          <li class="correct">✅ المعالج (CPU)</li>
+          <li>لوحة المفاتيح</li>
+          <li>الطابعة</li>
+        </ul>
+      </div>
+
+      <!-- س2: صح أم خطأ -->
+      <div class="q-block">
+        <div class="q-num">صح أم خطأ — 2</div>
+        <div class="q-text">الشاشة من وحدات الإخراج</div>
+        <ul class="q-options">
+          <li class="correct">✅ صح</li>
+          <li>خطأ</li>
+        </ul>
+      </div>
+
+      <!-- س3: مطابقة -->
+      <div class="q-block">
+        <div class="q-num">مطابقة — 3</div>
+        <div class="q-text">صل كل مصطلح بمعناه الصحيح</div>
+        <div class="q-pairs">
+          <div class="q-pair"><span class="term">CPU</span><span>←</span><span class="def">المعالج</span></div>
+          <div class="q-pair"><span class="term">Monitor</span><span>←</span><span class="def">الشاشة</span></div>
+          <div class="q-pair"><span class="term">Keyboard</span><span>←</span><span class="def">لوحة المفاتيح</span></div>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="import-notice">
+      📋 هذا الملف قابل للرفع مباشرةً على موقع مدرسة ابن المشرف<br>
+      من زر <strong>📤 رفع درس PDF</strong> في شريط المعلم — لا يحتاج ذكاء اصطناعي
+    </div>
+
+  </div><!-- /lesson-body -->
+</div><!-- /lesson-card -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     بيانات الدرس للاستيراد التلقائي
+     ⚠️ لا تحذف هذا القسم — الموقع يقرأ منه البيانات
+     عدّل القيم هنا لتطابق المحتوى المرئي أعلاه
+     ═══════════════════════════════════════════════════════════════ -->
+<script type="application/json" id="lesson-data">
+{
+  "name": "مكونات الحاسوب",
+  "objectives": [
+    "يتعرّف الطالب على المكونات الأساسية للحاسوب",
+    "يميّز بين وحدات الإدخال ووحدات الإخراج",
+    "يستخدم المصطلحات التقنية الصحيحة باللغتين",
+    "يربط كل مكوّن بوظيفته"
+  ],
+  "summary": "الحاسوب جهاز إلكتروني ذكي يتكوّن من مجموعة من المكونات التي تعمل معاً بتناسق. تنقسم هذه المكونات إلى وحدات إدخال مثل لوحة المفاتيح والفأرة، ووحدات إخراج مثل الشاشة والطابعة، ووحدات معالجة مثل المعالج والذاكرة.",
+  "keyPoints": [
+    "الحاسوب (Computer): جهاز إلكتروني يعالج البيانات وينفّذ التعليمات",
+    "المعالج (CPU): عقل الحاسوب الذي يتحكم في جميع العمليات",
+    "الذاكرة (RAM): تخزين مؤقت للبيانات أثناء تشغيل البرامج",
+    "وحدة الإدخال (Input): تُدخل البيانات إلى الحاسوب مثل لوحة المفاتيح والفأرة",
+    "وحدة الإخراج (Output): تُخرج نتائج المعالجة مثل الشاشة والطابعة",
+    "التخزين (Storage): حفظ البيانات بشكل دائم مثل القرص الصلب"
+  ],
+  "questions": [
+    {
+      "type": "mcq",
+      "question": "ما هو عقل الحاسوب الذي يتحكم في جميع العمليات؟",
+      "options": ["الشاشة", "المعالج (CPU)", "لوحة المفاتيح", "الطابعة"],
+      "answer": 1
+    },
+    {
+      "type": "mcq",
+      "question": "أيٌّ من التالي يُعدّ من وحدات الإدخال؟",
+      "options": ["الشاشة", "الطابعة", "لوحة المفاتيح", "السماعات"],
+      "answer": 2
+    },
+    {
+      "type": "mcq",
+      "question": "ما وظيفة الذاكرة العشوائية (RAM)؟",
+      "options": ["حفظ البيانات بشكل دائم", "تشغيل الصوت", "تخزين مؤقت للبيانات أثناء التشغيل", "عرض الصور"],
+      "answer": 2
+    },
+    {
+      "type": "tf",
+      "question": "الشاشة من وحدات الإخراج",
+      "answer": true
+    },
+    {
+      "type": "tf",
+      "question": "لوحة المفاتيح من وحدات الإخراج",
+      "answer": false
+    },
+    {
+      "type": "tf",
+      "question": "المعالج هو الجزء المسؤول عن معالجة البيانات في الحاسوب",
+      "answer": true
+    },
+    {
+      "type": "match",
+      "question": "صل كل مصطلح بمعناه الصحيح",
+      "pairs": [
+        ["CPU", "المعالج"],
+        ["Monitor", "الشاشة"],
+        ["Keyboard", "لوحة المفاتيح"]
+      ]
+    },
+    {
+      "type": "match",
+      "question": "صل كل جهاز بتصنيفه الصحيح",
+      "pairs": [
+        ["الشاشة", "وحدة إخراج"],
+        ["الفأرة", "وحدة إدخال"],
+        ["القرص الصلب", "وحدة تخزين"]
+      ]
+    }
+  ]
+}
+</script>
+
+</body>
+</html>`;
+
+    const blob = new Blob([tpl], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'lesson-template.html';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
+  // ───────────────────────────────────────────────
   //  استدعاء Google Gemini API
   //  يدعم CORS من المتصفح مباشرةً — مجاني ومريح
   // ───────────────────────────────────────────────
@@ -272,13 +674,37 @@ ${text.slice(0, 8000)}`;
     modal.innerHTML = `
       <div class="pim-box">
         <div class="pim-header">
-          <div class="pim-title">📤 رفع درس من PDF</div>
+          <div class="pim-title">📤 رفع درس</div>
           <button class="pim-close" onclick="window.PdfImporter.close()">✕</button>
         </div>
         <div class="pim-body pim-scroll">
 
-          <!-- مفتاح Gemini API -->
+          <!-- رفع الملف -->
           <div class="pim-section">
+            <label class="pim-label">📂 ملف الدرس</label>
+            <div class="pim-dropzone" id="pim-dz"
+              ondragover="event.preventDefault();this.classList.add('pim-dz-over')"
+              ondragleave="this.classList.remove('pim-dz-over')"
+              ondrop="window.PdfImporter._onDrop(event)"
+              onclick="document.getElementById('pim-file').click()">
+              <input type="file" id="pim-file" accept=".html,.htm,.pdf,.md" style="display:none"
+                onchange="window.PdfImporter._onFileChange(this)">
+              <div class="pim-dz-icon">📄</div>
+              <div id="pim-dz-text" class="pim-dz-text">اسحب الملف هنا أو اضغط للاختيار</div>
+              <div class="pim-dz-hint">
+                HTML (موصى به) · PDF · Markdown
+                <button type="button" onclick="event.stopPropagation();window.PdfImporter._downloadTemplate()"
+                  style="margin-right:10px;background:#E3F2FD;color:#1565C0;border:none;
+                         border-radius:20px;padding:2px 10px;font-family:'Cairo',sans-serif;
+                         font-size:.78rem;font-weight:700;cursor:pointer;">
+                  ⬇ تحميل القالب
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- مفتاح Gemini API (يظهر فقط لغير HTML) -->
+          <div class="pim-section" id="pim-ai-section">
             <label class="pim-label">
               🔑 مفتاح Google Gemini API
               <span class="pim-badge-safe">مجاني — محفوظ في الجلسة فقط</span>
@@ -296,24 +722,8 @@ ${text.slice(0, 8000)}`;
                 style="color:#1565C0;font-weight:700">
                 aistudio.google.com
               </a>
-              — أنشئ مشروعاً جديداً ثم انسخ المفتاح
+              — لا يُطلب للملفات HTML
             </p>
-          </div>
-
-          <!-- رفع الملف -->
-          <div class="pim-section">
-            <label class="pim-label">📂 ملف الدرس</label>
-            <div class="pim-dropzone" id="pim-dz"
-              ondragover="event.preventDefault();this.classList.add('pim-dz-over')"
-              ondragleave="this.classList.remove('pim-dz-over')"
-              ondrop="window.PdfImporter._onDrop(event)"
-              onclick="document.getElementById('pim-file').click()">
-              <input type="file" id="pim-file" accept=".pdf,.md" style="display:none"
-                onchange="window.PdfImporter._onFileChange(this)">
-              <div class="pim-dz-icon">📄</div>
-              <div id="pim-dz-text" class="pim-dz-text">اسحب الملف هنا أو اضغط للاختيار</div>
-              <div class="pim-dz-hint">يدعم ملفات PDF و Markdown ‎(.md)</div>
-            </div>
           </div>
 
           <!-- موقع الدرس في المنهج -->
@@ -360,7 +770,7 @@ ${text.slice(0, 8000)}`;
 
           <div class="pim-footer">
             <button class="pim-btn pim-btn-ghost" onclick="window.PdfImporter.close()">إلغاء</button>
-            <button class="pim-btn pim-btn-primary" onclick="window.PdfImporter._process()">
+            <button class="pim-btn pim-btn-primary" id="pim-submit-btn" onclick="window.PdfImporter._process()">
               🚀 استخراج وتوليد بالذكاء الاصطناعي
             </button>
           </div>
@@ -606,21 +1016,31 @@ ${text.slice(0, 8000)}`;
     const f = inp.files?.[0];
     if (!f) return;
 
-    const isPdf = f.type === 'application/pdf' || f.name.endsWith('.pdf');
-    const isMd  = f.type === 'text/markdown' || f.type === 'text/plain' || f.name.endsWith('.md');
+    const isPdf  = f.type === 'application/pdf' || f.name.endsWith('.pdf');
+    const isMd   = f.type === 'text/markdown' || f.type === 'text/plain' || f.name.endsWith('.md');
+    const isHtml = f.name.endsWith('.html') || f.name.endsWith('.htm');
 
-    if (!isPdf && !isMd) {
-      _setError('نوع الملف غير مدعوم — اختر ملف PDF أو Markdown (md.)'); return;
+    if (!isPdf && !isMd && !isHtml) {
+      _setError('نوع الملف غير مدعوم — اختر ملف HTML أو PDF أو Markdown'); return;
     }
     if (f.size > 20 * 1024 * 1024) {
       _setError('حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت)'); return;
     }
+
     _file = f;
-    const icon = isMd ? '📝' : '📄';
+    const icon = isHtml ? '🌐' : isMd ? '📝' : '📄';
     const txt = document.getElementById('pim-dz-text');
     if (txt) txt.textContent = `✅ ${icon} ${f.name} (${(f.size / 1024).toFixed(0)} KB)`;
     document.getElementById('pim-dz')?.classList.add('pim-dz-ready');
     _clearError();
+
+    // إخفاء/إظهار قسم API key وتغيير نص زر المعالجة
+    const aiSection = document.getElementById('pim-ai-section');
+    const submitBtn = document.getElementById('pim-submit-btn');
+    if (aiSection) aiSection.style.display = isHtml ? 'none' : '';
+    if (submitBtn) submitBtn.innerHTML = isHtml
+      ? '📋 استيراد الدرس مباشرةً'
+      : '🚀 استخراج وتوليد بالذكاء الاصطناعي';
   }
 
   function _onDrop(e) {
@@ -769,22 +1189,32 @@ ${text.slice(0, 8000)}`;
     const mode    = document.querySelector('input[name="pim-mode"]:checked')?.value || 'new';
     const replIdx = mode === 'replace' ? document.getElementById('pim-replace')?.value : null;
 
+    const isHtml = _file?.name.endsWith('.html') || _file?.name.endsWith('.htm');
+    const isMd   = _file?.name.endsWith('.md');
+
     // ── التحقق من المدخلات ──
-    if (!apiKey)              return _setError('أدخل مفتاح Google Gemini API');
-    if (apiKey.length < 15)  return _setError('مفتاح API قصير جداً — تحقق من النسخ من aistudio.google.com');
-    if (!_file)                               return _setError('اختر ملف PDF أو Markdown أولاً');
+    if (!_file)                               return _setError('اختر ملفاً أولاً');
+    if (!isHtml && !apiKey)                  return _setError('أدخل مفتاح Google Gemini API');
+    if (!isHtml && apiKey.length < 15)       return _setError('مفتاح API قصير جداً — تحقق من النسخ من aistudio.google.com');
     if (!grade)                               return _setError('اختر الصف الدراسي');
-    if (semIdx === '' || semIdx == null)       return _setError('اختر الفصل الدراسي');
-    if (unitIdx === '' || unitIdx == null)     return _setError('اختر الوحدة الدراسية');
-    if (mode === 'replace' && !replIdx)       return _setError('اختر الدرس الذي تريد استبداله');
+    if (semIdx === '' || semIdx == null)      return _setError('اختر الفصل الدراسي');
+    if (unitIdx === '' || unitIdx == null)    return _setError('اختر الوحدة الدراسية');
+    if (mode === 'replace' && !replIdx)      return _setError('اختر الدرس الذي تريد استبداله');
 
     // ── حفظ البيانات مؤقتاً ──
-    sessionStorage.setItem(API_KEY_SESS, apiKey);
+    if (apiKey) sessionStorage.setItem(API_KEY_SESS, apiKey);
     _target = { grade, semIdx: +semIdx, unitIdx: +unitIdx, mode, replIdx: replIdx != null ? +replIdx : null };
 
-    const isMd = _file.name.endsWith('.md');
-
     try {
+      // ── مسار HTML: بدون ذكاء اصطناعي ──
+      if (isHtml) {
+        _showProcessing('📋 قراءة بيانات الدرس من الملف...');
+        const lesson = await _parseHtml(_file);
+        _showReview(lesson, []);
+        return;
+      }
+
+      // ── مسار PDF / MD: عبر Gemini AI ──
       _showProcessing(isMd ? '📝 قراءة ملف Markdown...' : '📄 قراءة ملف PDF...');
 
       const parser = isMd ? _parseMd : _parsePdf;
@@ -800,7 +1230,8 @@ ${text.slice(0, 8000)}`;
           'لم يتمكن البرنامج من قراءة النصوص من هذا الملف.\n\n' +
           'الأسباب الشائعة:\n' +
           '• الملف عبارة عن صور ممسوحة ضوئياً (Scanned PDF) — يجب أن يحتوي PDF على نصوص قابلة للنسخ\n' +
-          '• جرّب فتح الملف في Adobe Reader وتحقق من إمكانية تحديد النص بالماوس'
+          '• جرّب فتح الملف في Adobe Reader وتحقق من إمكانية تحديد النص بالماوس\n' +
+          '• أو استخدم قالب HTML بدلاً من PDF — لا يحتاج ذكاء اصطناعي'
         );
         return;
       }
@@ -977,7 +1408,8 @@ ${text.slice(0, 8000)}`;
     _addQ,
     _addPair,
     _process,
-    _save
+    _save,
+    _downloadTemplate
   };
 
 })();
