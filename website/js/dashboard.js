@@ -1,4 +1,26 @@
-const STORAGE_KEY='ibn_moshrf_curriculum';const TEACHER_PIN_KEY='ibn_moshrf_teacher_pin';const TEACHER_SESSION='ibn_moshrf_teacher_auth';const PIN_SALT='ibn_teacher_2025';let curriculum={};let activeLesson=null;let qbState={};async function _hashPin(pin){const encoder=new TextEncoder();const data=encoder.encode(pin+PIN_SALT);const buf=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+const STORAGE_KEY='ibn_moshrf_curriculum';const TEACHER_PIN_KEY='ibn_moshrf_teacher_pin';const TEACHER_SESSION='ibn_moshrf_teacher_auth';const PIN_SALT='ibn_teacher_2025';let curriculum={};let activeLesson=null;const DEFAULT_SECTION_ORDER=['objectives','summary','keyPoints','images','questions'];const BUILTIN_SECTIONS={objectives:{icon:'🎯',title:'الأهداف التعليمية'},summary:{icon:'📝',title:'ملخص الدرس'},keyPoints:{icon:'⚡',title:'النقاط الرئيسية'},images:{icon:'🖼️',title:'صور الدرس'},questions:{icon:'🎮',title:'الأسئلة التفاعلية'},};function _getLessonSectionOrder(lesson){if(lesson.sectionOrder&&lesson.sectionOrder.length>0){const order=[...lesson.sectionOrder];(lesson.customSections||[]).forEach(cs=>{if(!order.includes(cs.id)){const qi=order.indexOf('questions');order.splice(qi>=0?qi:order.length,0,cs.id);}});return order;}
+const order=[...DEFAULT_SECTION_ORDER];(lesson.customSections||[]).forEach(cs=>{const qi=order.indexOf('questions');order.splice(qi>=0?qi:order.length,0,cs.id);});return order;}
+function renderSectionsOrderPanel(lesson){const order=_getLessonSectionOrder(lesson);return order.map((key,i)=>{const builtin=BUILTIN_SECTIONS[key];const custom=(lesson.customSections||[]).find(cs=>cs.id===key);const icon=builtin?builtin.icon:(custom?custom.icon:'📌');const title=builtin?builtin.title:(custom?custom.title||'قسم بدون عنوان':key);return`
+      <div class="so-item" id="so-${escHtml(key)}">
+        <span class="so-drag">☰</span>
+        <span class="so-icon">${icon}</span>
+        <span class="so-title">${escHtml(title)}</span>
+        <div class="so-actions">
+          <button class="kp-move-btn" title="تحريك لأعلى"
+                  onclick="moveSectionOrder('${escHtml(key)}',-1)"
+                  ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="kp-move-btn" title="تحريك لأسفل"
+                  onclick="moveSectionOrder('${escHtml(key)}',1)"
+                  ${i === order.length - 1 ? 'disabled' : ''}>↓</button>
+          ${!builtin ? `<button class="kp-del-btn"title="حذف"onclick="removeSectionFromOrder('${escHtml(key)}')">✕</button>` : ''}
+        </div>
+      </div>`;}).join('');}
+function moveSectionOrder(key,dir){const{lesson}=getLesson(activeLesson);const order=_getLessonSectionOrder(lesson);const i=order.indexOf(key);const j=i+dir;if(j<0||j>=order.length)return;[order[i],order[j]]=[order[j],order[i]];lesson.sectionOrder=order;_reRenderSectionsOrder();}
+function removeSectionFromOrder(key){const{lesson}=getLesson(activeLesson);const order=_getLessonSectionOrder(lesson);lesson.sectionOrder=order.filter(k=>k!==key);if(lesson.customSections){lesson.customSections=lesson.customSections.filter(cs=>cs.id!==key);}
+renderLessonEditor();}
+function addSectionFromOrder(){const{lesson}=getLesson(activeLesson);const id='cs_'+Date.now();if(!lesson.customSections)lesson.customSections=[];lesson.customSections.push({id,title:'',icon:'📌',content:''});const order=_getLessonSectionOrder(lesson);const qi=order.indexOf('questions');order.splice(qi>=0?qi:order.length,0,id);lesson.sectionOrder=order;renderLessonEditor();setTimeout(()=>{const cs=document.getElementById('custom-sections-list');if(cs)cs.scrollIntoView({behavior:'smooth',block:'center'});},300);}
+function _reRenderSectionsOrder(){const panel=document.getElementById('sections-order-list');if(!panel)return;const{lesson}=getLesson(activeLesson);panel.innerHTML=renderSectionsOrderPanel(lesson);}
+let qbState={};async function _hashPin(pin){const encoder=new TextEncoder();const data=encoder.encode(pin+PIN_SALT);const buf=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 function _isTeacherAuthed(){return sessionStorage.getItem(TEACHER_SESSION)==='1';}
 function showPinModal(){const overlay=document.getElementById('pin-overlay');if(!overlay)return;const stored=localStorage.getItem(TEACHER_PIN_KEY);const title=document.getElementById('pin-modal-title');const hint=document.getElementById('pin-modal-hint');if(!stored){if(title)title.textContent='إنشاء رمز الدخول للمعلم';if(hint)hint.textContent='أنشئ رمزاً سرياً (4 أحرف على الأقل) لحماية لوحة التحكم';}else{if(title)title.textContent='لوحة تحكم المعلم 🔒';if(hint)hint.textContent='أدخل رمز الدخول للمتابعة';}
 overlay.classList.remove('hidden');setTimeout(()=>document.getElementById('pin-input')?.focus(),100);}
@@ -284,6 +306,17 @@ function renderLessonEditor(){const{grade,sem,unit,lesson}=getLesson(activeLesso
       <span style="color:${unit.color}">${unit.icon} ${unit.name}</span>
       <span class="sep">›</span>
       <span style="font-weight:700">${lesson.name}</span>
+    </div>
+
+    <!-- ترتيب الأقسام -->
+    <div class="editor-card so-card">
+      <div class="editor-card-title">📋 ترتيب أقسام الدرس
+        <span class="so-hint">اضغط ↑↓ لتغيير الترتيب — سيظهر هكذا في صفحة الدرس</span>
+      </div>
+      <div class="so-list" id="sections-order-list">
+        ${renderSectionsOrderPanel(lesson)}
+      </div>
+      <button class="add-item-btn" onclick="addSectionFromOrder()" style="margin-top:10px">+ إضافة قسم مخصص</button>
     </div>
 
     <!-- اسم الدرس -->
