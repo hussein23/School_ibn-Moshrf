@@ -8,8 +8,14 @@
 <link rel="stylesheet" href="css/dashboard.css">
 <style>
 /* ===== Page Layout ===== */
-body { margin: 0; font-family: 'ThmanyahSans', sans-serif; background: var(--bg, #f1f5f9); }
-.st-layout { display: flex; min-height: 100vh; }
+/* إلغاء قيود overflow من style.css العامة */
+html, body {
+  height: 100% !important;
+  overflow: hidden !important;
+  margin: 0;
+}
+body { font-family: 'ThmanyahSans', sans-serif; background: var(--bg, #f1f5f9); }
+.st-layout { display: flex; height: 100vh; overflow: hidden; }
 
 /* ===== Sidebar ===== */
 .st-sidebar {
@@ -58,7 +64,14 @@ body { margin: 0; font-family: 'ThmanyahSans', sans-serif; background: var(--bg,
 .st-class-btn.active .st-count-badge { background: #dbeafe; color: #1d4ed8; }
 
 /* ===== Main Content ===== */
-.st-main { flex: 1; padding: 24px; min-width: 0; }
+.st-main {
+  flex: 1;
+  padding: 24px;
+  min-width: 0;
+  overflow-y: auto;   /* التمرير العمودي لعرض كل الطلاب */
+  overflow-x: auto;   /* التمرير الأفقي للجدول العريض */
+  height: 100vh;
+}
 .st-header {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 20px; flex-wrap: wrap;
@@ -114,7 +127,7 @@ body { margin: 0; font-family: 'ThmanyahSans', sans-serif; background: var(--bg,
   border-radius: 20px; background: var(--bg, #f1f5f9);
   color: var(--text-mid, #64748b);
 }
-.st-scroll { overflow-x: auto; }
+.st-scroll { overflow-x: visible; }
 table.st-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 800px; }
 table.st-table th {
   padding: 8px 10px; text-align: center;
@@ -184,15 +197,21 @@ table.st-table tr:hover td.td-name { background: #f8faff; }
 
 /* ===== Responsive ===== */
 @media(max-width:768px){
-  .st-sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; border-left: none; border-bottom: 1px solid var(--border); }
+  .st-layout { flex-direction: column; height: auto; overflow: visible; }
+  html, body { overflow: auto !important; height: auto !important; }
+  .st-sidebar {
+    width: 100%; height: auto; position: static;
+    flex-direction: column; border-left: none;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+  }
   .st-sidebar-header { width: 100%; }
   .st-grade-section { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 10px; }
   .st-grade-label { display: none; }
   .st-class-btn { width: auto; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); }
   .st-class-btn.active { background: #1d4ed8; color: white; }
   .st-class-btn.active::before { display: none; }
-  .st-layout { flex-direction: column; }
-  .st-main { padding: 14px; }
+  .st-main { padding: 14px; height: auto; overflow: visible; }
   .st-count-badge { display: none; }
 }
 
