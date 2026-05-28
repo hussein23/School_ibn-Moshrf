@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - المهارات الرقمية</title>
+
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- Preload -->
+  <link rel="preload" href="css/dashboard.css" as="style">
+  <link rel="preload" href="js/data.js" as="script">
+  <link rel="preload" href="js/dashboard.js" as="script">
+
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- ===== الشريط العلوي ===== -->
+  <header class="dash-header">
+    <div class="dash-header-right">
+      <div class="dash-logo">
+        <span>⚙️</span>
+        <div>
+          <strong>لوحة التحكم</strong>
+          <small>المهارات الرقمية</small>
+        </div>
+      </div>
+    </div>
+    <div class="dash-header-center">
+      <div class="save-status" id="save-status">✅ محفوظ</div>
+    </div>
+    <div class="dash-header-left">
+      <button class="hbtn hbtn-ghost" onclick="resetTeacherPin()" title="تغيير رمز الدخول">🔑 رمز الدخول</button>
+      <button class="hbtn hbtn-ghost" onclick="resetToDefault()" title="استعادة البيانات الأصلية">↺ استعادة</button>
+      <button class="hbtn hbtn-secondary" onclick="importJSON()">📥 استيراد</button>
+      <button class="hbtn hbtn-primary" onclick="exportJSON()">📤 تصدير JSON</button>
+      <a class="hbtn hbtn-view" href="index.html" target="_blank">👁 عرض الموقع</a>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
+    </div>
+  </header>
+
+  <div class="dash-layout">
+
+    <!-- ===== الشريط الجانبي ===== -->
+    <aside class="dash-sidebar">
+      <div class="sidebar-search">
+        <input type="text" id="search-input" placeholder="🔍 ابحث عن درس..." oninput="filterSidebar(this.value)">
+      </div>
+      <div class="sidebar-tree" id="sidebar-tree"></div>
+      <div class="sidebar-footer">
+        <button class="add-grade-btn" onclick="openAddLesson()">+ إضافة درس جديد</button>
+        <button class="add-grade-btn students-nav-btn" onclick="showStudentPanel()" style="margin-top:8px;background:#7C3AED">👥 إدارة الطلاب</button>
+        <button class="add-grade-btn students-nav-btn" onclick="showTeacherAccountPanel()" style="margin-top:8px;background:#0ea5e9">👨‍🏫 حساب المعلم</button>
+        <button class="add-grade-btn students-nav-btn" onclick="location.href='students.html'" style="margin-top:8px;background:#059669">📊 سجل متابعة الطلاب</button>
+      </div>
+    </aside>
+
+    <!-- ===== المنطقة الرئيسية ===== -->
+    <main class="dash-main" id="dash-main">
+      <!-- الصفحة الرئيسية للوحة -->
+      <div class="dash-overview" id="overview-panel">
+        <h1 class="overview-title">مرحباً بك في لوحة التحكم 👋</h1>
+        <p class="overview-sub">اختر درساً من القائمة الجانبية للتعديل، أو ابدأ بالإحصائيات أدناه</p>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="overview-actions">
+          <a class="action-card" href="exam-builder.html" target="_blank" style="text-decoration:none;color:inherit">
+            <span class="ac-icon">📋</span>
+            <strong>منشئ الاختبار</strong>
+            <small>صمّم اختباراً وصدّره PDF أو Word</small>
+          </a>
+          <button class="action-card" onclick="exportJSON()">
+            <span class="ac-icon">📤</span>
+            <strong>تصدير البيانات</strong>
+            <small>تنزيل data.js المعدّل</small>
+          </button>
+          <button class="action-card" onclick="importJSON()">
+            <span class="ac-icon">📥</span>
+            <strong>استيراد بيانات</strong>
+            <small>تحميل ملف JSON</small>
+          </button>
+          <button class="action-card" onclick="resetToDefault()">
+            <span class="ac-icon">↺</span>
+            <strong>استعادة الأصلي</strong>
+            <small>محو التعديلات المحلية</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- محرر الدرس (يظهر عند اختيار درس) -->
+      <div class="lesson-editor hidden" id="lesson-editor"></div>
+
+      <!-- إدارة الطلاب (يظهر عند الضغط على "إدارة الطلاب") -->
+      <div class="hidden" id="student-panel"></div>
+
+      <!-- حساب المعلم على الموقع (يظهر عند الضغط على "حساب المعلم") -->
+      <div class="hidden" id="teacher-account-panel"></div>
+    </main>
+  </div>
+
+  <!-- ===== نافذة منشئ الأسئلة ===== -->
+  <div class="modal-overlay hidden" id="qb-overlay" onclick="closeQuestionBuilder()"></div>
+  <div class="question-builder hidden" id="question-builder">
+    <div class="qb-header">
+      <h2 id="qb-title">➕ إضافة سؤال</h2>
+      <button class="qb-close" onclick="closeQuestionBuilder()">✕</button>
+    </div>
+
+    <!-- اختيار نوع السؤال -->
+    <div class="qb-type-select" id="qb-type-select">
+      <p>اختر نوع السؤال:</p>
+      <div class="type-cards">
+        <button class="type-card" onclick="selectQuestionType('mcq')">
+          <span>🔘</span>
+          <strong>اختر من متعدد</strong>
+          <small>سؤال مع 4 خيارات</small>
+        </button>
+        <button class="type-card" onclick="selectQuestionType('tf')">
+          <span>✅</span>
+          <strong>صح أو خطأ</strong>
+          <small>جملة صحيحة أو خاطئة</small>
+        </button>
+        <button class="type-card" onclick="selectQuestionType('match')">
+          <span>🔗</span>
+          <strong>وصل</strong>
+          <small>ربط العمودين ببعض</small>
+        </button>
+        <button class="type-card" onclick="selectQuestionType('fill')">
+          <span>✏️</span>
+          <strong>أملأ الفراغ</strong>
+          <small>جمل بفراغات من بنك كلمات</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- نموذج السؤال -->
+    <div class="qb-form hidden" id="qb-form">
+      <button class="back-to-types" onclick="backToTypes()">← تغيير النوع</button>
+      <div id="qb-form-content"></div>
+      <div class="qb-preview" id="qb-preview"></div>
+      <div class="qb-actions">
+        <button class="qb-cancel" onclick="closeQuestionBuilder()">إلغاء</button>
+        <button class="qb-save" onclick="saveQuestion()">💾 حفظ السؤال</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== نافذة تأكيد الحذف ===== -->
+  <div class="confirm-overlay hidden" id="confirm-overlay">
+    <div class="confirm-box">
+      <p id="confirm-msg">هل أنت متأكد؟</p>
+      <div class="confirm-actions">
+        <button class="cbtn-cancel" onclick="closeConfirm()">إلغاء</button>
+        <button class="cbtn-delete" id="confirm-ok">حذف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== نافذة رمز دخول المعلم ===== -->
+  <div class="pin-overlay" id="pin-overlay">
+    <div class="pin-modal">
+      <div class="pin-modal-icon">🔐</div>
+      <h2 class="pin-modal-title" id="pin-modal-title">لوحة تحكم المعلم</h2>
+      <p class="pin-modal-hint" id="pin-modal-hint">أدخل رمز الدخول للمتابعة</p>
+      <input class="pin-input" id="pin-input" type="password"
+             placeholder="رمز الدخول" maxlength="20" autocomplete="off"
+             onkeydown="if(event.key==='Enter') submitPin()">
+      <div class="pin-error hidden" id="pin-error"></div>
+      <button class="pin-submit-btn" id="pin-submit-btn" onclick="submitPin()">دخول ←</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (Compat v9) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- SheetJS لقراءة ملفات Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- إعدادات Firebase وطبقة قاعدة البيانات -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-db.js"></script>
+
+  <!-- TinyMCE 6 via jsDelivr (بدون API key) -->
+  <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.4/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <script src="js/data.js"></script>
+  <script src="js/curriculum-loader.js"></script>
+  <script src="js/student-auth.js" defer></script>
+  <script src="js/dashboard.js" defer></script>
+
+  <!-- تسجيل Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function (reg) { console.log('[SW] مسجّل:', reg.scope); })
+          .catch(function (err) { console.warn('[SW] فشل:', err); });
+      });
+    }
+  </script>
+</body>
+</html>

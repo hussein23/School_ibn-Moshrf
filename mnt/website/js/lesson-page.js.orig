@@ -1,0 +1,326 @@
+// الترتيب الافتراضي لأقسام الدرس (يُستخدم عند غياب lesson.sectionOrder)
+const DEFAULT_SECTION_ORDER = ['objectives','summary','keyPoints','images','questions'];
+
+// أسماء الأقسام لشريط التقدم العائم
+const SECTION_LABELS = {
+  objectives: '🎯 أهداف الدرس',
+  summary:    '📋 ملخص الدرس',
+  keyPoints:  '⚡ النقاط الرئيسية',
+  images:     '🖼️ صور الدرس',
+  questions:  '🎮 اختبر نفسك',
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(location.search);
+  const gradeId  = p.get('g');
+  const semId    = p.get('s');
+  const unitId   = p.get('u');
+  const lessonId = p.get('l');
+
+  // تطبيق أي تعديلات محفوظة من لوحة التحكم
+  if (window.FirebaseDB && window.FirebaseDB.dbLoadCurriculum) {
+    const fc = window.FirebaseDB.dbLoadCurriculum();
+    if (fc && Object.keys(fc).length) Object.keys(fc).forEach(k => CURRICULUM[k] = fc[k]);
+  }
+  const saved = localStorage.getItem('ibn_moshrf_curriculum');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      Object.keys(parsed).forEach(k => CURRICULUM[k] = parsed[k]);
+    } catch(e) {}
+  }
+
+  const grade  = CURRICULUM[gradeId];
+  const sem    = grade.semesters.find(s => s.id === semId);
+  const unit   = sem.units.find(u => u.id === unitId);
+  const lesson = unit.lessons.find(l => l.id === lessonId);
+
+  document.title = `${lesson.name} - المهارات الرقمية`;
+  window._currentLessonId    = lessonId;
+  window._currentLessonGrade = gradeId;
+
+  document.getElementById('breadcrumb').innerHTML = `
+    <span class="bc-item" onclick="history.go(-2)" style="cursor:pointer">${sem.name}</span>
+    <span class="bc-sep">›</span>
+    <span class="bc-item" onclick="history.back()" style="cursor:pointer">${unit.name}</span>
+    <span class="bc-sep">›</span>
+    <span class="bc-item bc-current">${lesson.name}</span>`;
+
+  const color = unit.color;
+  const qJSON = JSON.stringify(lesson.questions).replace(/"/g, '&quot;');
+
+  // تحديد ترتيب الأقسام
+  const order = _getSectionOrder(lesson);
+
+  // بناء HTML الأقسام مع إضافة بيانات التركيز
+  // الإصلاح: نستخدم regex يلتقط الـ class الكامل لتجنب كسر lp-quiz-section
+  const sectionsHTML = order.map((key, i) => {
+    const html = _renderSection(key, lesson, unit, grade, color, qJSON);
+    if (!html) return '';
+    const cs    = (lesson.customSections || []).find(s => s.id === key);
+    const label = SECTION_LABELS[key] || (cs ? `${cs.icon || '📌'} ${cs.title || 'قسم'}` : '');
+    // يلتقط كل الـ classes الموجودة بين " " ثم يضيف lp-focus-card بدون كسر الـ HTML
+    return html.replace(
+      /^<div class="(lp-section[^"]*)"/,
+      `<div class="$1 lp-focus-card" data-sec-label="${label}" data-sec-index="${i}"`
+    );
+  }).join('');
+
+  document.getElementById('main-content').innerHTML = `
+    <button class="back-btn" onclick="history.back()" style="margin-bottom:20px">← رجوع</button>
+
+    <!-- Hero -->
+    <div class="lp-hero" style="background:linear-gradient(135deg,${color}dd 0%,${color} 100%)">
+      <div class="lp-hero-bg">${unit.icon}</div>
+      <div class="lp-hero-content">
+        <div class="lp-hero-meta">
+          <span class="lp-meta-chip">${grade.icon} ${grade.name}</span>
+          <span class="lp-meta-chip">${sem.name}</span>
+          <span class="lp-meta-chip">${unit.icon} ${unit.name}</span>
+        </div>
+        <h1 class="lp-hero-title">${lesson.name}</h1>
+        <div class="lp-hero-stats">
+          ${lesson.objectives && lesson.objectives.length ? `<div class="lp-stat"><span class="lp-stat-icon">🎯</span><span>${lesson.objectives.length} أهداف</span></div>` : ''}
+          ${lesson.keyPoints  && lesson.keyPoints.length  ? `<div class="lp-stat"><span class="lp-stat-icon">⚡</span><span>${lesson.keyPoints.length} نقطة</span></div>` : ''}
+          <div class="lp-stat"><span class="lp-stat-icon">🎮</span><span>${lesson.questions.length} سؤال</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- شريط التقدم العائم -->
+    <div id="lp-progress-bar" class="lp-progress-bar" style="--prog-color:${color}">
+      <div class="lp-prog-inner">
+        <div class="lp-prog-dots" id="lp-prog-dots"></div>
+        <div class="lp-prog-label" id="lp-prog-label"></div>
+      </div>
+    </div>
+
+    <!-- الأقسام بالترتيب المحدد -->
+    ${sectionsHTML}
+  `;
+
+  setTimeout(() => {
+    initDragDrop();
+    _initLessonFocus(color);
+  }, 120);
+});
+
+// ===================================================
+//  ترتيب الأقسام
+// ===================================================
+function _getSectionOrder(lesson) {
+  if (lesson.sectionOrder && lesson.sectionOrder.length > 0) {
+    const order = [...lesson.sectionOrder];
+    (lesson.customSections || []).forEach(cs => {
+      if (!order.includes(cs.id)) {
+        const qi = order.indexOf('questions');
+        order.splice(qi >= 0 ? qi : order.length, 0, cs.id);
+      }
+    });
+    return order;
+  }
+  const order = [...DEFAULT_SECTION_ORDER];
+  (lesson.customSections || []).forEach(cs => {
+    const qi = order.indexOf('questions');
+    order.splice(qi >= 0 ? qi : order.length, 0, cs.id);
+  });
+  return order;
+}
+
+// ===================================================
+//  عرض قسم واحد
+// ===================================================
+function _renderSection(key, lesson, unit, grade, color, qJSON) {
+  switch (key) {
+
+    case 'objectives':
+      if (!lesson.objectives || !lesson.objectives.length) return '';
+      return `<div class="lp-section">
+        <div class="lp-section-header" style="--sec-color:${color}">
+          <div class="lp-section-icon">🎯</div><h2>أهداف الدرس</h2>
+        </div>
+        <div class="lp-objectives">
+          ${lesson.objectives.map((obj, i) => `
+            <div class="lp-obj-item" style="animation-delay:${i * 0.08}s">
+              <div class="lp-obj-num" style="background:${color}20;color:${color}">${i + 1}</div>
+              <span>${obj}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    case 'summary':
+      if (!lesson.summary) return '';
+      return `<div class="lp-section">
+        <div class="lp-section-header" style="--sec-color:${color}">
+          <div class="lp-section-icon">📋</div><h2>ملخص الدرس</h2>
+        </div>
+        <div class="lp-summary" style="border-right-color:${color}">${lesson.summary}</div>
+      </div>`;
+
+    case 'keyPoints':
+      if (!lesson.keyPoints || !lesson.keyPoints.length) return '';
+      return `<div class="lp-section">
+        <div class="lp-section-header" style="--sec-color:${color}">
+          <div class="lp-section-icon">⚡</div><h2>النقاط الرئيسية</h2>
+        </div>
+        ${renderKeyPoints(lesson, color)}
+      </div>`;
+
+    case 'images':
+      return renderLessonImages(lesson, color);
+
+    case 'questions':
+      if (!lesson.questions || !lesson.questions.length) return '';
+      return `<div class="lp-section lp-quiz-section">
+        <div class="lp-section-header" style="--sec-color:${color}">
+          <div class="lp-section-icon">🎮</div>
+          <h2>اختبر نفسك</h2>
+          <span class="lp-quiz-count">${lesson.questions.length} أسئلة</span>
+        </div>
+        <p class="lp-quiz-intro">أجب على جميع الأسئلة ثم اضغط "تحقق من إجاباتي"</p>
+        <div id="questions-container" class="questions-container">
+          ${renderAllQuestions(lesson.questions, color)}
+        </div>
+        <button class="lp-check-btn" style="background:${color}"
+                onclick="checkAllAnswers(${qJSON})">
+          ✅ تحقق من إجاباتي
+        </button>
+      </div>`;
+
+    default:
+      // قسم مخصص
+      const cs = (lesson.customSections || []).find(s => s.id === key);
+      if (!cs || !cs.content) return '';
+      return `<div class="lp-section">
+        <div class="lp-section-header" style="--sec-color:${color}">
+          <div class="lp-section-icon">${cs.icon || '📌'}</div>
+          <h2>${cs.title || 'قسم'}</h2>
+        </div>
+        <div class="lp-summary" style="border-right-color:${color}">${cs.content}</div>
+      </div>`;
+  }
+}
+
+// ===================================================
+//  النقاط الرئيسية
+// ===================================================
+function renderKeyPoints(lesson, color) {
+  const layout = lesson.kpLayout || 'list';
+  const kps    = lesson.keyPoints || [];
+  if (!kps.length) return '<p style="color:var(--text-light);text-align:center;padding:20px">لا توجد نقاط رئيسية</p>';
+
+  function textLen(html) { return html.replace(/<[^>]*>/g, '').trim().length; }
+
+  if (layout === 'list') {
+    return `<div class="lp-keypoints lp-kp-list">
+      ${kps.map((kp, i) => `
+        <div class="lp-kp-card" style="animation-delay:${i * 0.06}s;--kp-color:${color}">
+          <div class="lp-kp-dot" style="background:${color}"></div>
+          <span>${kp}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  if (layout === 'grid') {
+    return `<div class="lp-keypoints lp-kp-grid">
+      ${kps.map((kp, i) => {
+        const wide = textLen(kp) > 90;
+        return `<div class="lp-kp-card${wide ? ' kp-full' : ''}" style="animation-delay:${i * 0.06}s;--kp-color:${color}">
+          <div class="lp-kp-num" style="background:${color};color:#fff">${i + 1}</div>
+          <span>${kp}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  if (layout === 'cards') {
+    const cardColors = [color,'#2196F3','#10B981','#F59E0B','#EC4899','#7C3AED'];
+    return `<div class="lp-keypoints lp-kp-cards">
+      ${kps.map((kp, i) => {
+        const c = cardColors[i % cardColors.length];
+        return `<div class="lp-kp-ccard" style="--card-color:${c};animation-delay:${i * 0.07}s">
+          <div class="lp-kp-ccard-num">${i + 1}</div>
+          <div class="lp-kp-ccard-body">${kp}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+  return '';
+}
+
+// ===================================================
+//  صور الدرس
+// ===================================================
+function renderLessonImages(lesson, color) {
+  const imgs = (lesson.images || []).filter(img => img.src);
+  if (!imgs.length) return '';
+  return `<div class="lp-section">
+    <div class="lp-section-header" style="--sec-color:${color}">
+      <div class="lp-section-icon">🖼️</div><h2>صور الدرس</h2>
+    </div>
+    <div class="lp-img-gallery">
+      ${imgs.map(img => `
+        <div class="lp-img-item">
+          <img src="${img.src}" alt="${img.caption || ''}" loading="lazy">
+          ${img.caption ? `<div class="lp-img-caption">${img.caption}</div>` : ''}
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ===================================================
+//  تأثير التركيز على الأقسام
+// ===================================================
+function _initLessonFocus(color) {
+  const cards = [...document.querySelectorAll('.lp-focus-card')];
+  if (!cards.length) return;
+
+  const dotsEl  = document.getElementById('lp-prog-dots');
+  const labelEl = document.getElementById('lp-prog-label');
+
+  // بناء نقاط التقدم
+  if (dotsEl) {
+    dotsEl.innerHTML = cards.map((_, i) =>
+      `<span class="lp-dot" id="lp-dot-${i}"></span>`
+    ).join('');
+  }
+
+  // تعتيم كل البطاقات في البداية
+  cards.forEach(c => c.classList.add('lp-sec-dimmed'));
+
+  // تفعيل الأولى
+  if (cards[0]) {
+    cards[0].classList.remove('lp-sec-dimmed');
+    cards[0].classList.add('lp-sec-active');
+    _updateProgBar(cards[0], 0, labelEl);
+  }
+
+  if (!('IntersectionObserver' in window)) return;
+
+  // إلغاء أي observer سابق
+  if (window._lessonSecObs) window._lessonSecObs.disconnect();
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.2) {
+        cards.forEach(c => {
+          c.classList.add('lp-sec-dimmed');
+          c.classList.remove('lp-sec-active');
+        });
+        entry.target.classList.remove('lp-sec-dimmed');
+        entry.target.classList.add('lp-sec-active');
+        _updateProgBar(entry.target, +entry.target.dataset.secIndex, labelEl);
+      }
+    });
+  }, { threshold: 0.2, rootMargin: '-8% 0px -42% 0px' });
+
+  cards.forEach(c => obs.observe(c));
+  window._lessonSecObs = obs;
+}
+
+function _updateProgBar(card, idx, labelEl) {
+  if (labelEl) labelEl.textContent = card.dataset.secLabel || '';
+  document.querySelectorAll('.lp-dot').forEach((d, i) => {
+    d.classList.toggle('lp-dot-active', i === idx);
+  });
+}
