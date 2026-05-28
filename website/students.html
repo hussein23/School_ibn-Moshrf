@@ -250,11 +250,24 @@ if (!sessionStorage.getItem(TEACHER_SESSION)) {
 
 // Load from localStorage (edits override raw)
 let DATA = JSON.parse(JSON.stringify(RAW_DATA));
-const STORE_KEY = 'ibn_moshrf_students';
+// مفتاح مختلف تماماً عن ibn_moshrf_students (الذي يستخدمه نظام تسجيل الطلاب)
+const STORE_KEY = 'ibn_moshrf_class_tracking';
+
+function _isValidTrackingData(d) {
+  // التحقق أن البيانات المحملة لها مفاتيح فصول صحيحة (مثل 4أ-ف1) وليس UUIDs
+  if (!d || typeof d !== 'object') return false;
+  const keys = Object.keys(d);
+  if (!keys.length) return false;
+  return keys.some(k => /^[456][أب]-ف[12]$/.test(k));
+}
+
 function loadData() {
   try {
     const saved = localStorage.getItem(STORE_KEY);
-    if (saved) DATA = JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (_isValidTrackingData(parsed)) DATA = parsed;
+    }
   } catch(e) {}
 }
 function saveData() {
