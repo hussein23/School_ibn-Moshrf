@@ -214,10 +214,11 @@ html, body {
   color: var(--text-mid, #64748b);
 }
 
-/* حاوية التمرير الحقيقية للجدول — ارتفاع ثابت بـ calc */
+/* حاوية التمرير — ارتفاع ثابت يمنح الجدول مساحة التمرير */
 .st-table-scroll {
-  overflow: auto;
-  height: calc(100vh - 168px); /* 100vh - st-header(55) - st-content padding(40) - st-table-head(50) - margin(23) */
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 168px);
 }
 table.st-table {
   border-collapse: collapse;
@@ -318,6 +319,69 @@ table.st-table tr:hover td.td-name { background: #f8faff; }
 .chart-bar-fill { height: 100%; border-radius: 9px; display: flex; align-items: center; padding-right: 8px; }
 .chart-bar-val { font-size: 10px; font-weight: 700; color: white; }
 
+/* ===== الجدول الموجز (compact) ===== */
+.st-summary-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+.st-summary-table th {
+  padding: 8px 10px; text-align: center;
+  background: #f8fafc;
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  font-size: 11px; font-weight: 700;
+  color: var(--text-mid, #64748b);
+  white-space: nowrap;
+  position: sticky; top: 0; z-index: 2;
+}
+.st-summary-table th.th-name { text-align: right; padding-right: 14px; min-width: 170px; }
+.st-summary-table td {
+  padding: 8px 10px; text-align: center;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+.st-summary-table td.td-name {
+  text-align: right; padding-right: 14px;
+  font-weight: 700;
+}
+.st-summary-table td.td-num { color: var(--text-light, #94a3b8); font-size: 12px; width: 36px; }
+.st-summary-table tr:hover td { background: #f8faff; }
+
+/* خلية المجموع الفرعي — قابلة للنقر لتوسيع التفاصيل */
+.score-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  border: 1.5px solid transparent;
+  background: #f1f5f9; color: #475569;
+}
+.score-pill:hover { background: #e0e7ff; color: #3730a3; border-color: #6366f1; }
+.score-pill.active { background: #e0e7ff; color: #3730a3; border-color: #6366f1; }
+.score-pill .sp-val { font-size: 14px; }
+.score-pill .sp-arrow { font-size: 9px; opacity: .5; }
+
+/* صف التوسع للتفاصيل */
+.expand-row td {
+  padding: 0 !important;
+  background: #f8faff !important;
+  border-bottom: 2px solid #e0e7ff !important;
+}
+.expand-panel {
+  padding: 14px 18px;
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;
+}
+.expand-cat { display: flex; flex-direction: column; gap: 6px; }
+.expand-cat-label {
+  font-size: 10px; font-weight: 700; color: #6366f1;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.expand-checks {
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+.exp-check-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.exp-check-label { font-size: 9px; color: #94a3b8; }
+
 /* Responsive */
 @media(max-width:768px){
   html, body { overflow: auto !important; height: auto !important; }
@@ -328,7 +392,6 @@ table.st-table tr:hover td.td-name { background: #f8faff; }
   .st-nav-scroll { max-height: 200px; }
   .st-main { height: auto; overflow: visible; }
   .st-content { overflow: visible; }
-  .st-table-scroll { height: 60vh; overflow: auto; }
 }
 </style>
 </head>
@@ -573,6 +636,9 @@ function filterStudents() {
   renderClassTable(activeClass);
 }
 
+// حالة الصفوف الموسّعة { 'cls-idx-cat': true }
+let expandedRows = {};
+
 function renderClassTable(cls) {
   const students = DATA[cls];
   const q = document.getElementById('search-input').value.trim().toLowerCase();
@@ -591,46 +657,102 @@ function renderClassTable(cls) {
   const high = withT.length ? Math.max(...withT.map(s=>s.total)).toFixed(1) : '-';
   const low  = withT.length ? Math.min(...withT.map(s=>s.total)).toFixed(1) : '-';
 
-  const rows = list.map((s,i) => {
-    const totalClass = getGradeColor(s.total);
-    const beh = s.behavior == null ? '<span class="beh-zero">—</span>'
-              : s.behavior > 0  ? `<span class="beh-pos">+${s.behavior}</span>`
-              : s.behavior < 0  ? `<span class="beh-neg">${s.behavior}</span>`
-              : '<span class="beh-zero">0</span>';
+  // دالة مساعدة: رسم pill المجموع الفرعي
+  function scorePill(val, max, cat, realIdx) {
+    const key = `${cls}-${realIdx}-${cat}`;
+    const isOpen = !!expandedRows[key];
+    const pct = val != null ? Math.round((val / max) * 100) : null;
+    const color = pct == null ? '#f1f5f9'
+                : pct >= 90 ? '#dcfce7' : pct >= 75 ? '#dbeafe'
+                : pct >= 60 ? '#fef9c3' : '#fee2e2';
+    const textColor = pct == null ? '#94a3b8'
+                    : pct >= 90 ? '#15803d' : pct >= 75 ? '#1d4ed8'
+                    : pct >= 60 ? '#a16207' : '#b91c1c';
+    const display = val != null ? val.toFixed(1) : '—';
+    return `<span class="score-pill${isOpen?' active':''}"
+      style="${val!=null?`background:${color};color:${textColor};border-color:${textColor}40`:''}"
+      onclick="toggleExpand('${cls}',${realIdx},'${cat}')"
+      title="انقر لعرض/تعديل التفاصيل">
+      <span class="sp-val">${display}</span><span class="sp-arrow">/${max} ▾</span>
+    </span>`;
+  }
 
-    function check(field, studentIdx) {
-      const val = s[field];
-      const cls2 = val === 1 || val === 1.0 ? 'done' : 'miss';
-      const icon = cls2 === 'done' ? '✓' : '·';
-      return `<span class="cell-check ${cls2}" onclick="toggleCheck('${cls}',${studentIdx},'${field}')">${icon}</span>`;
-    }
-    function numCell(field, studentIdx, max) {
-      const val = s[field];
-      const display = val != null ? val : '—';
-      return `<span class="cell-edit" onclick="editCell(this,'${cls}',${studentIdx},'${field}',${max})">${display}</span>`;
-    }
+  // دالة مساعدة: رسم خلية رقمية قابلة للتعديل
+  function numPill(field, realIdx, max) {
+    const val = students[realIdx][field];
+    const display = val != null ? val : '—';
+    const color = max === 40
+      ? (val >= 36?'#dcfce7': val >= 30?'#dbeafe': val >= 24?'#fef9c3':'#f1f5f9')
+      : (val >= 18?'#dcfce7': val >= 15?'#dbeafe': val >= 12?'#fef9c3':'#f1f5f9');
+    const textColor = max === 40
+      ? (val >= 36?'#15803d': val >= 30?'#1d4ed8': val >= 24?'#a16207':'#475569')
+      : (val >= 18?'#15803d': val >= 15?'#1d4ed8': val >= 12?'#a16207':'#475569');
+    return `<span class="score-pill" style="${val!=null?`background:${color};color:${textColor}`:''}"
+      onclick="editCell(this,'${cls}',${realIdx},'${field}',${max})"
+      title="انقر للتعديل">
+      <span class="sp-val">${display}</span><span class="sp-arrow">/${max} ✎</span>
+    </span>`;
+  }
 
+  // بناء صفوف الجدول
+  let rowsHTML = '';
+  list.forEach((s, i) => {
     const realIdx = students.indexOf(s);
-    return `<tr>
+    const totalClass = getGradeColor(s.total);
+    const beh = s.behavior == null
+      ? `<span class="beh-zero" style="cursor:pointer" onclick="editBehavior('${cls}',${realIdx})">—</span>`
+      : s.behavior > 0
+        ? `<span class="beh-pos" style="cursor:pointer" onclick="editBehavior('${cls}',${realIdx})">+${s.behavior}</span>`
+        : s.behavior < 0
+          ? `<span class="beh-neg" style="cursor:pointer" onclick="editBehavior('${cls}',${realIdx})">${s.behavior}</span>`
+          : `<span class="beh-zero" style="cursor:pointer" onclick="editBehavior('${cls}',${realIdx})">0</span>`;
+
+    // صف الملخص
+    rowsHTML += `<tr data-idx="${realIdx}">
       <td class="td-num">${s.num || i+1}</td>
       <td class="td-name">${s.name}</td>
-      <td>${check('w1',realIdx)}</td><td>${check('w2',realIdx)}</td><td>${check('w3',realIdx)}</td>
-      <td>${check('w4',realIdx)}</td><td>${check('w5',realIdx)}</td><td>${check('w6',realIdx)}</td>
-      <td style="font-weight:700">${s.w_total != null ? s.w_total.toFixed(1) : '—'}</td>
-      <td>${check('b1',realIdx)}</td><td>${check('b2',realIdx)}</td><td>${check('b3',realIdx)}</td><td>${check('b4',realIdx)}</td>
-      <td style="font-weight:700">${s.b_total != null ? s.b_total.toFixed(1) : '—'}</td>
-      <td>${check('t1',realIdx)}</td><td>${check('t2',realIdx)}</td><td>${check('t3',realIdx)}</td>
-      <td>${check('t4',realIdx)}</td><td>${check('t5',realIdx)}</td><td>${check('t6',realIdx)}</td>
-      <td style="font-weight:700">${s.t_total != null ? s.t_total.toFixed(1) : '—'}</td>
-      <td>${check('m1',realIdx)}</td><td>${check('m2',realIdx)}</td><td>${check('m3',realIdx)}</td>
-      <td>${check('m4',realIdx)}</td><td>${check('m5',realIdx)}</td>
-      <td style="font-weight:700">${s.m_total != null ? s.m_total.toFixed(1) : '—'}</td>
-      <td>${numCell('practical',realIdx,40)}</td>
-      <td>${numCell('written',realIdx,20)}</td>
+      <td>${scorePill(s.w_total, 10, 'w', realIdx)}</td>
+      <td>${scorePill(s.b_total, 10, 'b', realIdx)}</td>
+      <td>${scorePill(s.t_total, 10, 't', realIdx)}</td>
+      <td>${scorePill(s.m_total, 10, 'm', realIdx)}</td>
+      <td>${numPill('practical', realIdx, 40)}</td>
+      <td>${numPill('written', realIdx, 20)}</td>
       <td><span class="total-badge ${totalClass}">${s.total != null && s.total > 0 ? s.total.toFixed(1) : '—'}</span></td>
       <td>${beh}</td>
     </tr>`;
-  }).join('');
+
+    // صفوف التوسع للفئات المفتوحة
+    const cats = [
+      { key:'w', label:'واجبات', fields:['w1','w2','w3','w4','w5','w6'], labels:['و١','و٢','و٣','و٤','و٥','و٦'] },
+      { key:'b', label:'بحوث',   fields:['b1','b2','b3','b4'],           labels:['ب١','ب٢','ب٣','ب٤'] },
+      { key:'t', label:'تفاعل',  fields:['t1','t2','t3','t4','t5','t6'], labels:['ت١','ت٢','ت٣','ت٤','ت٥','ت٦'] },
+      { key:'m', label:'مشاركة', fields:['m1','m2','m3','m4','m5'],      labels:['م١','م٢','م٣','م٤','م٥'] },
+    ];
+
+    const openCats = cats.filter(c => expandedRows[`${cls}-${realIdx}-${c.key}`]);
+    if (openCats.length) {
+      const panelContent = openCats.map(cat => `
+        <div class="expand-cat">
+          <div class="expand-cat-label">${cat.label}</div>
+          <div class="expand-checks">
+            ${cat.fields.map((f, fi) => {
+              const val = s[f];
+              const isDone = val === 1;
+              return `<div class="exp-check-item">
+                <span class="cell-check ${isDone?'done':'miss'}"
+                  onclick="toggleCheck('${cls}',${realIdx},'${f}')">${isDone?'✓':'·'}</span>
+                <span class="exp-check-label">${cat.labels[fi]}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`).join('');
+      rowsHTML += `<tr class="expand-row">
+        <td colspan="10">
+          <div class="expand-panel">${panelContent}</div>
+        </td>
+      </tr>`;
+    }
+  });
 
   document.getElementById('main-content').innerHTML = `
     <div class="st-table-wrap">
@@ -644,31 +766,43 @@ function renderClassTable(cls) {
         </div>
       </div>
       <div class="st-table-scroll">
-        <table class="st-table">
+        <table class="st-summary-table">
           <thead>
             <tr>
-              <th class="th-num" rowspan="2">#</th>
-              <th class="th-name" rowspan="2">اسم الطالب</th>
-              <th colspan="7" class="th-group">واجبات /10</th>
-              <th colspan="5" class="th-group">بحوث /10</th>
-              <th colspan="7" class="th-group">تفاعل /10</th>
-              <th colspan="6" class="th-group">مشاركة /10</th>
-              <th class="th-group" rowspan="2">عملي<br>/40</th>
-              <th class="th-group" rowspan="2">تحريري<br>/20</th>
-              <th class="th-group" rowspan="2">المجموع<br>/100</th>
-              <th class="th-group" rowspan="2">السلوك</th>
-            </tr>
-            <tr>
-              <th>و1</th><th>و2</th><th>و3</th><th>و4</th><th>و5</th><th>و6</th><th>مج</th>
-              <th>ب1</th><th>ب2</th><th>ب3</th><th>ب4</th><th>مج</th>
-              <th>ت1</th><th>ت2</th><th>ت3</th><th>ت4</th><th>ت5</th><th>ت6</th><th>مج</th>
-              <th>م1</th><th>م2</th><th>م3</th><th>م4</th><th>م5</th><th>مج</th>
+              <th style="width:36px">#</th>
+              <th class="th-name">اسم الطالب</th>
+              <th>واجبات<br><small style="font-weight:400;color:#94a3b8">/10</small></th>
+              <th>بحوث<br><small style="font-weight:400;color:#94a3b8">/10</small></th>
+              <th>تفاعل<br><small style="font-weight:400;color:#94a3b8">/10</small></th>
+              <th>مشاركة<br><small style="font-weight:400;color:#94a3b8">/10</small></th>
+              <th>عملي<br><small style="font-weight:400;color:#94a3b8">/40</small></th>
+              <th>تحريري<br><small style="font-weight:400;color:#94a3b8">/20</small></th>
+              <th>المجموع<br><small style="font-weight:400;color:#94a3b8">/100</small></th>
+              <th>السلوك</th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${rowsHTML}</tbody>
         </table>
       </div>
     </div>`;
+}
+
+// توسيع/طي صف التفاصيل
+function toggleExpand(cls, idx, cat) {
+  const key = `${cls}-${idx}-${cat}`;
+  if (expandedRows[key]) delete expandedRows[key];
+  else expandedRows[key] = true;
+  renderClassTable(cls);
+}
+
+// تعديل السلوك
+function editBehavior(cls, idx) {
+  const cur = DATA[cls][idx].behavior;
+  const val = prompt('أدخل قيمة السلوك (موجب أو سالب):', cur != null ? cur : '');
+  if (val === null) return;
+  DATA[cls][idx].behavior = val === '' ? null : parseInt(val);
+  saveData();
+  renderClassTable(cls);
 }
 
 // Toggle check (واجبات/بحوث/تفاعل/مشاركة)
