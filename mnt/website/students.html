@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل متابعة الطلاب - المهارات الرقمية</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<style>
+/* =========================================
+   Layout — 100vh مع scroll مستقل لكل منطقة
+   ========================================= */
+html, body {
+  height: 100% !important;
+  overflow: hidden !important;
+  margin: 0;
+  font-family: 'ThmanyahSans', sans-serif;
+  background: var(--bg, #f1f5f9);
+}
+
+/* الحاوية الرئيسية: flex أفقي يملأ الشاشة */
+.st-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ===== Sidebar ===== */
+.st-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--white, #fff);
+  border-left: 1px solid var(--border, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;              /* يتحكم overflow داخله */
+  transition: width .25s ease;
+}
+.st-sidebar.collapsed { width: 48px; }
+
+.st-sidebar-header {
+  padding: 10px 10px 8px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* زر إخفاء/إظهار القائمة */
+.st-toggle-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--bg, #f1f5f9);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  transition: background .15s;
+  align-self: flex-start;
+}
+.st-toggle-btn:hover { background: #e2e8f0; }
+
+.st-sidebar-inner {
+  overflow: hidden;
+  transition: opacity .2s;
+}
+.st-sidebar.collapsed .st-sidebar-inner { opacity: 0; pointer-events: none; }
+.st-sidebar.collapsed .st-nav-scroll { opacity: 0; pointer-events: none; overflow: hidden; }
+
+.st-back-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 8px;
+  background: var(--bg, #f1f5f9); color: var(--text-mid, #64748b);
+  font-size: 12px; font-weight: 600; cursor: pointer; border: none;
+  width: 100%; transition: background .15s; white-space: nowrap;
+}
+.st-back-btn:hover { background: #e2e8f0; }
+.st-sidebar-title {
+  font-size: 11px; font-weight: 700; color: var(--text-mid, #64748b);
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: 4px 2px 0; white-space: nowrap;
+}
+
+/* قائمة الفصول — لها scroll مستقل */
+.st-nav-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+}
+.st-grade-section { padding: 6px 0; }
+.st-grade-label {
+  font-size: 10px; font-weight: 700; color: var(--text-light, #94a3b8);
+  padding: 4px 12px; text-transform: uppercase; letter-spacing: .04em;
+  white-space: nowrap;
+}
+.st-class-btn {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 12px;
+  background: none; border: none; cursor: pointer;
+  text-align: right; font-family: inherit; font-size: 13px;
+  font-weight: 600; color: var(--text-dark, #1e293b);
+  transition: background .12s; position: relative;
+  white-space: nowrap;
+}
+.st-class-btn:hover { background: var(--bg, #f1f5f9); }
+.st-class-btn.active { background: #eff6ff; color: #1d4ed8; }
+.st-class-btn.active::before {
+  content: ''; position: absolute; right: 0; top: 4px; bottom: 4px;
+  width: 3px; background: #1d4ed8; border-radius: 2px;
+}
+.st-count-badge {
+  margin-right: auto; font-size: 10px; font-weight: 700;
+  background: var(--bg, #f1f5f9); color: var(--text-mid, #64748b);
+  padding: 1px 6px; border-radius: 20px; flex-shrink: 0;
+}
+.st-class-btn.active .st-count-badge { background: #dbeafe; color: #1d4ed8; }
+
+/* ===== Main — يتمرر هو نفسه ===== */
+.st-main {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* شريط الرأس — ثابت لا يتمرر */
+.st-header {
+  padding: 16px 20px 12px;
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; flex-shrink: 0;
+  background: var(--bg, #f1f5f9);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+.st-page-title { font-size: 20px; font-weight: 900; flex: 1; min-width: 0; }
+
+/* منطقة المحتوى — تتمرر عمودياً */
+.st-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+.st-search {
+  padding: 7px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  font-family: inherit; font-size: 13px; width: 180px;
+  background: var(--white, #fff); outline: none;
+}
+.st-search:focus { border-color: #3b82f6; }
+.st-filter-select {
+  padding: 7px 10px; border-radius: 10px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  font-family: inherit; font-size: 13px;
+  background: var(--white, #fff); outline: none; cursor: pointer;
+}
+
+/* ===== Overview Cards ===== */
+.st-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px,1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.st-card {
+  background: var(--white, #fff); border-radius: 14px;
+  padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.st-card-label { font-size: 11px; color: var(--text-mid, #64748b); font-weight: 600; margin-bottom: 4px; }
+.st-card-val { font-size: 24px; font-weight: 900; }
+.st-card-sub { font-size: 11px; color: var(--text-light, #94a3b8); margin-top: 2px; }
+
+/* ===== Overview charts grid ===== */
+.st-ov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media(max-width:900px){ .st-ov-grid { grid-template-columns: 1fr; } }
+
+/* ===== Class cards ===== */
+.st-cls-card {
+  background: var(--white, #fff); border-radius: 12px;
+  padding: 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  border: 2px solid transparent; transition: all .2s;
+}
+.st-cls-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+.st-cls-name { font-size: 15px; font-weight: 900; margin-bottom: 4px; }
+.st-cls-stats { font-size: 11px; color: var(--text-mid, #64748b); }
+.st-cls-bar { height: 5px; border-radius: 3px; background: #e2e8f0; margin-top: 8px; overflow: hidden; }
+.st-cls-fill { height: 100%; border-radius: 3px; }
+
+/* ===== Student Table ===== */
+.st-table-wrap {
+  background: var(--white, #fff);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  display: flex;
+  flex-direction: column;
+  /* لا overflow:hidden هنا حتى يعمل position:sticky للرؤوس */
+}
+.st-table-head {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; flex-shrink: 0;
+}
+.st-class-title { font-size: 16px; font-weight: 900; }
+.st-stat-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.st-chip {
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; background: var(--bg, #f1f5f9);
+  color: var(--text-mid, #64748b);
+}
+
+/* الجدول له scroll container أفقي — العمودي يتولاه st-content */
+.st-table-scroll {
+  overflow-x: auto;     /* يتمرر أفقياً فقط */
+  overflow-y: visible;
+}
+table.st-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 1100px;   /* عرض الجدول الكامل */
+  width: 100%;
+}
+table.st-table th {
+  padding: 7px 9px; text-align: center;
+  background: #f8fafc;
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  font-size: 11px; font-weight: 700;
+  color: var(--text-mid, #64748b);
+  white-space: nowrap;
+  position: sticky; top: 0; z-index: 2;   /* عناوين ثابتة عند التمرير العمودي */
+}
+table.st-table th.th-name {
+  text-align: right; padding-right: 14px;
+  min-width: 170px;
+  position: sticky; right: 0; top: 0;     /* عمود الاسم ثابت يميناً */
+  background: #f8fafc; z-index: 4;
+  box-shadow: -3px 0 6px rgba(0,0,0,.06);
+}
+table.st-table th.th-num { min-width: 34px; }
+table.st-table td {
+  padding: 7px 8px; text-align: center;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+table.st-table td.td-name {
+  text-align: right; padding-right: 14px;
+  font-weight: 700; font-size: 13px;
+  position: sticky; right: 0;             /* عمود الاسم ثابت عند التمرير الأفقي */
+  background: var(--white, #fff); z-index: 1;
+  box-shadow: -3px 0 6px rgba(0,0,0,.06);
+}
+table.st-table td.td-num { color: var(--text-light, #94a3b8); font-size: 12px; }
+table.st-table tr:hover td { background: #f8faff; }
+table.st-table tr:hover td.td-name { background: #f8faff; }
+
+.th-group {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-top: 2px solid #3b82f6;
+  font-size: 10px;
+}
+
+/* خلايا قابلة للتعديل */
+.cell-edit {
+  display: inline-block; min-width: 30px; padding: 3px 6px;
+  border-radius: 6px; cursor: pointer; transition: background .12s;
+  font-family: inherit; font-size: 13px;
+}
+.cell-edit:hover { background: #eff6ff; }
+
+.cell-check {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; transition: all .15s;
+}
+.cell-check.done { background: #dcfce7; color: #16a34a; }
+.cell-check.miss { background: #f1f5f9; color: #cbd5e1; }
+.cell-check:hover { transform: scale(1.15); }
+
+/* بادج المجموع */
+.total-badge {
+  font-size: 13px; font-weight: 900; padding: 3px 10px;
+  border-radius: 20px; display: inline-block; min-width: 42px;
+}
+.total-exc  { background: #dcfce7; color: #15803d; }
+.total-good { background: #dbeafe; color: #1d4ed8; }
+.total-mid  { background: #fef9c3; color: #a16207; }
+.total-low  { background: #fee2e2; color: #b91c1c; }
+.total-none { background: #f1f5f9; color: #94a3b8; }
+
+/* السلوك */
+.beh-pos { background: #dcfce7; color: #15803d; padding: 2px 7px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+.beh-neg { background: #fee2e2; color: #b91c1c; padding: 2px 7px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+.beh-zero { color: #94a3b8; font-size: 12px; }
+
+/* أزرار */
+.st-export-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 10px;
+  background: #1d4ed8; color: white; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.st-export-btn:hover { background: #1e40af; }
+.save-ind { font-size: 12px; color: #10b981; font-weight: 600; opacity: 0; transition: opacity .3s; white-space: nowrap; }
+.save-ind.show { opacity: 1; }
+
+/* Chart bars */
+.chart-area { padding: 14px 18px 18px; }
+.chart-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.chart-bar-label { width: 65px; font-size: 11px; font-weight: 700; text-align: right; flex-shrink: 0; }
+.chart-bar-track { flex: 1; height: 18px; background: #f1f5f9; border-radius: 9px; overflow: hidden; }
+.chart-bar-fill { height: 100%; border-radius: 9px; display: flex; align-items: center; padding-right: 8px; }
+.chart-bar-val { font-size: 10px; font-weight: 700; color: white; }
+
+/* Responsive */
+@media(max-width:768px){
+  html, body { overflow: auto !important; height: auto !important; }
+  .st-layout { height: auto; flex-direction: column; overflow: visible; }
+  .st-sidebar { width: 100% !important; height: auto; border-left: none; border-bottom: 1px solid var(--border); }
+  .st-sidebar.collapsed { height: 48px; }
+  .st-sidebar-inner { opacity: 1 !important; pointer-events: auto !important; }
+  .st-nav-scroll { max-height: 200px; }
+  .st-main { height: auto; overflow: visible; }
+  .st-content { overflow: visible; }
+  .st-table-scroll { overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="st-layout">
+  <!-- Sidebar -->
+  <aside class="st-sidebar" id="st-sidebar">
+    <div class="st-sidebar-header">
+      <button class="st-toggle-btn" onclick="toggleSidebar()" title="إخفاء/إظهار القائمة">☰</button>
+      <div class="st-sidebar-inner">
+        <button class="st-back-btn" onclick="history.back()">← لوحة التحكم</button>
+        <div class="st-sidebar-title">الفصول الدراسية</div>
+      </div>
+    </div>
+
+    <div class="st-nav-scroll">
+      <div id="sidebar-nav"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="st-main">
+    <div class="st-header">
+      <div class="st-page-title" id="page-title">📊 سجل متابعة الطلاب</div>
+      <input class="st-search" id="search-input" placeholder="🔍 ابحث باسم الطالب..." oninput="filterStudents()" style="display:none">
+      <select class="st-filter-select" id="sort-select" onchange="filterStudents()" style="display:none">
+        <option value="">ترتيب: الافتراضي</option>
+        <option value="total-desc">الأعلى درجة أولاً</option>
+        <option value="total-asc">الأدنى درجة أولاً</option>
+        <option value="name">الاسم أبجدياً</option>
+        <option value="behavior">السلوك</option>
+      </select>
+      <span class="save-ind" id="save-ind">✓ تم الحفظ</span>
+      <button class="st-export-btn" id="export-btn" onclick="exportClass()" style="display:none">⬇ تصدير Excel</button>
+    </div>
+
+    <div class="st-content">
+      <div id="main-content"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const RAW_DATA = {"4أ-ف1":[{"num":1,"name":"أحمد عبدالعزيز المحسن","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":2,"name":"ابراهيم خليل الرشيد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":3,"name":"احمد ابراهيم البديوي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":4,"name":"تميم ماجد الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":5,"name":"جاسم محمد بن جاسم اجواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":6,"name":"حسن عادل السرور","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":7,"name":"خالد عبده حسن احمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":8,"name":"سالم فيصل سالم العليان","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":9,"name":"سعد احمد بن سعد المجيرن","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":10,"name":"سعود مشاري الصويلح","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":11,"name":"صالح عبدالعزيز العويس","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":12,"name":"صالح عبدالله الغريب","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":13,"name":"صالح علي صالح الفهيد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":14,"name":"عبدالرحمن - - تاج محمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":15,"name":"عبدالعزيز فيصل بوقرصين","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":16,"name":"عيسى فيصل المضحي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":17,"name":"فهد عبدالله الدهمه","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":18,"name":"كنان عبدالله المطير","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":19,"name":"محمد عبدالله الغريب","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":20,"name":"محمد محمد العبدالعظيم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":21,"name":"مسعود عبدالله الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":22,"name":"نايف حسين بن محمد العلي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":23,"name":"يوسف عبدالرزاق الفريدان","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null}],"4أ-ف2":[{"num":1,"name":"أحمد عبدالعزيز المحسن","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":30.0,"written":20.0,"total":57.9,"behavior":-4.0},{"num":2,"name":"ابراهيم خليل الرشيد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":3,"name":"احمد ابراهيم البديوي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":1.0},{"num":4,"name":"تميم ماجد الدوسري","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":5,"name":"جاسم محمد بن جاسم اجواد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":-1.0},{"num":6,"name":"حسن عادل السرور","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":7,"name":"خالد عبده حسن احمد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":8,"name":"سالم فيصل سالم العليان","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":5.9,"behavior":null},{"num":9,"name":"سعد احمد بن سعد المجيرن","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":-1.0},{"num":10,"name":"سعود مشاري الصويلح","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":11,"name":"صالح عبدالعزيز العويس","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":12,"name":"صالح عبدالله الغريب","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":13,"name":"صالح علي صالح الفهيد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":14,"name":"عبدالرحمن - - تاج محمد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":15,"name":"عبدالعزيز فيصل بوقرصين","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":16,"name":"عيسى فيصل المضحي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":17,"name":"فهد عبدالله الدهمه","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":18,"name":"كنان عبدالله المطير","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":19,"name":"محمد عبدالله الغريب","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":20,"name":"محمد محمد العبدالعظيم","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":21,"name":"مسعود عبدالله الدوسري","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":22,"name":"نايف حسين بن محمد العلي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":23,"name":"يوسف عبدالرزاق الفريدان","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":-1.0}],"4ب-ف1":[{"num":1,"name":"بدر محمد المحسن","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":2,"name":"تميم عبدالعزيز المزهر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":3,"name":"ثامر حسين العلي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":4,"name":"حسين حيدرالمزيدي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":5,"name":"خالد محمد اجواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":6,"name":"ذي يزن باسم سعد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":7,"name":"زياد بدر فتحي المقطري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":8,"name":"زياد صالح سيلوم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":9,"name":"سعود فيصل العلي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":10,"name":"سلطان بدر المقطري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":11,"name":"عارف عبدالعزيز العقيلي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":12,"name":"عباس فاضل الناصر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":13,"name":"عبدالله ابراهيم العويد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":14,"name":"عبدالله محمد النويشي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":15,"name":"عبدالمجيد خالد الزهراني","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":16,"name":"علي جمال السماح","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":17,"name":"علي شكيب فتيني محمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":18,"name":"علي كمال محمد ال شبيب","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":19,"name":"علي يوسف علي محمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":20,"name":"مبارك عبدالرحمن الدرويش","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":21,"name":"محمد احمد الفرط","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":22,"name":"موسى محمد السالم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":23,"name":"يعقوب وليد مرشد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null}],"4ب-ف2":[{"num":1,"name":"بدر محمد المحسن","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":1.0,"m3":null,"m4":null,"m5":null,"m_total":4.0,"practical":null,"written":null,"total":11.5,"behavior":null},{"num":2,"name":"تميم عبدالعزيز المزهر","w1":1.0,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":3.3,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":11.1,"behavior":null},{"num":3,"name":"ثامر حسين العلي","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":7.5,"behavior":null},{"num":4,"name":"حسين حيدرالمزيدي","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":0.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":7.5,"behavior":null},{"num":5,"name":"خالد محمد اجواد","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":0.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":0.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":5.9,"behavior":-3.0},{"num":6,"name":"ذي يزن باسم سعد","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":1.0,"m3":null,"m4":null,"m5":null,"m_total":4.0,"practical":null,"written":null,"total":11.5,"behavior":null},{"num":7,"name":"زياد بدر فتحي المقطري","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":1.0,"m3":null,"m4":null,"m5":null,"m_total":4.0,"practical":null,"written":null,"total":11.5,"behavior":null},{"num":8,"name":"زياد صالح سيلوم","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":0.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":0.0,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":-2.0},{"num":9,"name":"سعود فيصل العلي","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":null,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":10,"name":"سلطان بدر المقطري","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":9.5,"behavior":null},{"num":11,"name":"عارف عبدالعزيز العقيلي","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":9.5,"behavior":null},{"num":12,"name":"عباس فاضل الناصر","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":0.0,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.0,"behavior":null},{"num":13,"name":"عبدالله ابراهيم العويد","w1":1.0,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":3.3,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":11.1,"behavior":-3.0},{"num":14,"name":"عبدالله محمد النويشي","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":15,"name":"عبدالمجيد خالد الزهراني","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":16,"name":"علي جمال السماح","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":9.5,"behavior":null},{"num":17,"name":"علي شكيب فتيني محمد","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":9.5,"behavior":1.0},{"num":18,"name":"علي كمال محمد ال شبيب","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":9.5,"behavior":null},{"num":19,"name":"علي يوسف علي محمد","w1":1.0,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":3.3,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":9.5,"behavior":null},{"num":20,"name":"مبارك عبدالرحمن الدرويش","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":21,"name":"محمد احمد الفرط","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":22,"name":"موسى محمد السالم","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":23,"name":"يعقوب وليد مرشد","w1":null,"w2":1.0,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":-1.0}],"5أ-ف1":[{"num":1,"name":"أحمد نجيب القطان","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":2,"name":"أمير وليد مرشد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":3,"name":"الياس موسى الحمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":4,"name":"باسل فيصل المضحي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":5,"name":"تركي فهد الهارون","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":6,"name":"تميم غانم الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":7,"name":"تميم مشاري المقهوي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":8,"name":"حسن علي الدريسي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":9,"name":"حسين صالح السنيني","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":10,"name":"حمد فيصل البن سعد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":11,"name":"دانيال ابراهيم البراهيم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":12,"name":"راكان فوزي الحسين","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":13,"name":"زامل مشعل الشمري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":14,"name":"سعد محمد العميرين","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":15,"name":"صالح عادل الفريدان","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":16,"name":"طلال عبداللطيف الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":17,"name":"عبدالرحمن خليفه العبدالعظيم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":18,"name":"عبدالعزيز محمد الدخيل","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":19,"name":"عبدالله حسام الجريساني","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":20,"name":"عبدالله محمد البودريس","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":21,"name":"علي اشرف الربيع","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":22,"name":"فراس محمد الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":23,"name":"مبارك سالم الجعيدي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":24,"name":"محمد عبدالله الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":25,"name":"محمد عبدالله الطرثوث","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":26,"name":"محمد نايف عمر العمر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":27,"name":"مهدي صالح العواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":28,"name":"موسى صبحي عبدالله","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":29,"name":"هتان هيثم السلمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":30,"name":"يوسف فيصل العلي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null}],"5أ-ف2":[{"num":1,"name":"أحمد نجيب القطان","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":3.7,"behavior":null},{"num":2,"name":"أمير وليد مرشد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":null},{"num":3,"name":"الياس موسى الحمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":4,"name":"باسل فيصل المضحي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":null},{"num":5,"name":"تركي فهد الهارون","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":1.0},{"num":6,"name":"تميم غانم الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":7,"name":"تميم مشاري المقهوي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":2.0,"behavior":null},{"num":8,"name":"حسن علي الدريسي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":3.7,"behavior":null},{"num":9,"name":"حسين صالح السنيني","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":10,"name":"حمد فيصل البن سعد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":1.0,"b3":null,"b4":null,"b_total":5.0,"t1":1.0,"t2":1.0,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":3.3,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":12.0,"behavior":2.0},{"num":11,"name":"دانيال ابراهيم البراهيم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":2.0,"behavior":1.0},{"num":12,"name":"راكان فوزي الحسين","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":13,"name":"زامل مشعل الشمري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":14,"name":"سعد محمد العميرين","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":15,"name":"صالح عادل الفريدان","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":5.4,"behavior":null},{"num":16,"name":"طلال عبداللطيف الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":null},{"num":17,"name":"عبدالرحمن خليفه العبدالعظيم","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":18,"name":"عبدالعزيز محمد الدخيل","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":3.7,"behavior":null},{"num":19,"name":"عبدالله حسام الجريساني","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":20,"name":"عبدالله محمد البودريس","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":21,"name":"علي اشرف الربيع","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":-1.0},{"num":22,"name":"فراس محمد الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":-1.0},{"num":23,"name":"مبارك سالم الجعيدي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":24,"name":"محمد عبدالله الدوسري","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":25,"name":"محمد عبدالله الطرثوث","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":26,"name":"محمد نايف عمر العمر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":null},{"num":27,"name":"مهدي صالح العواد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":3.4,"behavior":null},{"num":28,"name":"موسى صبحي عبدالله","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":3.7,"behavior":null},{"num":29,"name":"هتان هيثم السلمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":1.7,"behavior":null},{"num":30,"name":"يوسف فيصل العلي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null}],"5ب-ف1":[],"5ب-ف2":[],"6أ-ف1":[{"num":1,"name":"ابراهيم عبد اللطيف أجواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":2,"name":"احمد بلغيث العشيش","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":3,"name":"تركي عبدالله بوقرصين","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":4,"name":"تميم صالح الرحيم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":5,"name":"حيدر خميس الحطاب","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":6,"name":"رمزي محمد المسلمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":7,"name":"سعود محمد العقيد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":8,"name":"صالح خالد البقيشي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":9,"name":"عباس فايز السبيتي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":10,"name":"عبدالاله خالد الجمعان","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":11,"name":"عبدالعزيز سعد القوع","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":12,"name":"عبدالله سعد العرب","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":13,"name":"عبدالله عدنان الزامل","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":14,"name":"عزام عايد العجل","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":15,"name":"علي سعيد الرشيد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":16,"name":"كرار حيدر الدالوي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":17,"name":"محمد عبدالله الشقاق","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null}],"6أ-ف2":[{"num":1,"name":"ابراهيم عبد اللطيف أجواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":2,"name":"احمد بلغيث العشيش","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":3,"name":"تركي عبدالله بوقرصين","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":4,"name":"تميم صالح الرحيم","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":5,"name":"حيدر خميس الحطاب","w1":0.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":4.2,"behavior":-2.0},{"num":6,"name":"رمزي محمد المسلمي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":7,"name":"سعود محمد العقيد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":8,"name":"صالح خالد البقيشي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":9,"name":"عباس فايز السبيتي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":10,"name":"عبدالاله خالد الجمعان","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":11,"name":"عبدالعزيز سعد القوع","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":12,"name":"عبدالله سعد العرب","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":13,"name":"عبدالله عدنان الزامل","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":3.7,"behavior":null},{"num":14,"name":"عزام عايد العجل","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":2.0},{"num":15,"name":"علي سعيد الرشيد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":16,"name":"كرار حيدر الدالوي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":17,"name":"محمد عبدالله الشقاق","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null}],"6ب-ف1":[{"num":1,"name":"أحمد علي سالم القطيش","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":2,"name":"ابراهيم ثابت علي النقيب","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":3,"name":"ابراهيم محمد الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":4,"name":"احمد محمد احمد البرجس","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":5,"name":"اسحاق يوسف محمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":6,"name":"بندر جواد بوطبله","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":7,"name":"زياد عبدالعزيز المزهر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":8,"name":"سلمي عبدالله السلمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":9,"name":"عبدالله احمد عبدالله القعيمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":10,"name":"عبدالله ماجد سالم العواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":11,"name":"عصام عبدالعزيز المزهر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":12,"name":"فهد مشاري سعود الأحمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":13,"name":"فيصل احمد الوحيمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":14,"name":"محمد حسن الحميدي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":15,"name":"مهند خالد العبيدي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null},{"num":16,"name":"يزن فهد الطويره","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":null,"b2":null,"b3":null,"b4":null,"b_total":0.0,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":null,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":null,"behavior":null}],"6ب-ف2":[{"num":1,"name":"أحمد علي سالم القطيش","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":1.0},{"num":2,"name":"ابراهيم ثابت علي النقيب","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":3,"name":"ابراهيم محمد الدوسري","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":0.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":2.5,"behavior":-2.0},{"num":4,"name":"احمد محمد احمد البرجس","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":4.5,"behavior":null},{"num":5,"name":"اسحاق يوسف محمد","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":6,"name":"بندر جواد بوطبله","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":7,"name":"زياد عبدالعزيز المزهر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":8,"name":"سلمي عبدالله السلمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":9,"name":"عبدالله احمد عبدالله القعيمي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":10,"name":"عبدالله ماجد سالم العواد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":11,"name":"عصام عبدالعزيز المزهر","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":12,"name":"فهد مشاري سعود الأحمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":13,"name":"فيصل احمد الوحيمد","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":14,"name":"محمد حسن الحميدي","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":6.2,"behavior":null},{"num":15,"name":"مهند خالد العبيدي","w1":1.0,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":1.7,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":1.0,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":1.7,"m1":1.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":2.0,"practical":null,"written":null,"total":7.9,"behavior":null},{"num":16,"name":"يزن فهد الطويره","w1":null,"w2":null,"w3":null,"w4":null,"w5":null,"w6":null,"w_total":0.0,"b1":1.0,"b2":null,"b3":null,"b4":null,"b_total":2.5,"t1":null,"t2":null,"t3":null,"t4":null,"t5":null,"t6":null,"t_total":0.0,"m1":0.0,"m2":null,"m3":null,"m4":null,"m5":null,"m_total":0.0,"practical":null,"written":null,"total":2.5,"behavior":null}]};
+const TEACHER_SESSION = 'ibn_moshrf_teacher_auth';
+
+// Auth check
+if (!sessionStorage.getItem(TEACHER_SESSION)) {
+  alert('يجب تسجيل الدخول كمعلم أولاً');
+  location.href = 'index.html';
+}
+
+// Load from localStorage (edits override raw)
+let DATA = JSON.parse(JSON.stringify(RAW_DATA));
+// مفتاح مختلف تماماً عن ibn_moshrf_students (الذي يستخدمه نظام تسجيل الطلاب)
+const STORE_KEY = 'ibn_moshrf_class_tracking';
+
+function _isValidTrackingData(d) {
+  // التحقق أن البيانات المحملة لها مفاتيح فصول صحيحة (مثل 4أ-ف1) وليس UUIDs
+  if (!d || typeof d !== 'object') return false;
+  const keys = Object.keys(d);
+  if (!keys.length) return false;
+  return keys.some(k => /^[456][أب]-ف[12]$/.test(k));
+}
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (_isValidTrackingData(parsed)) DATA = parsed;
+    }
+  } catch(e) {}
+}
+function saveData() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(DATA));
+  const ind = document.getElementById('save-ind');
+  ind.classList.add('show');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => ind.classList.remove('show'), 2000);
+}
+loadData();
+
+// Classes grouping
+const CLASSES = Object.keys(DATA);
+const GRADES = ['رابع', 'خامس', 'سادس'];
+const GRADE_CLASSES = {
+  'رابع':  CLASSES.filter(c => c.startsWith('4')),
+  'خامس': CLASSES.filter(c => c.startsWith('5')),
+  'سادس': CLASSES.filter(c => c.startsWith('6')),
+};
+
+let activeClass = null;
+
+// إخفاء/إظهار الشريط الجانبي
+function toggleSidebar() {
+  const sb = document.getElementById('st-sidebar');
+  const btn = sb.querySelector('.st-toggle-btn');
+  sb.classList.toggle('collapsed');
+  btn.textContent = sb.classList.contains('collapsed') ? '»' : '☰';
+}
+
+// Build sidebar
+function buildSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  // Overview button
+  const ovBtn = document.createElement('div');
+  ovBtn.className = 'st-grade-section';
+  ovBtn.innerHTML = `<button class="st-class-btn active" id="btn-overview" onclick="showOverview()">
+    🏠 نظرة عامة <span class="st-count-badge">${CLASSES.reduce((a,c)=>a+DATA[c].length,0)}</span>
+  </button>`;
+  nav.appendChild(ovBtn);
+
+  GRADES.forEach(g => {
+    const cls = GRADE_CLASSES[g];
+    if (!cls.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'st-grade-section';
+    sec.innerHTML = `<div class="st-grade-label">${g}</div>`;
+    cls.forEach(c => {
+      const label = c.replace('ف1','- فصل١').replace('ف2','- فصل٢').replace('أ','أ').replace('ب','ب');
+      const btn = document.createElement('button');
+      btn.className = 'st-class-btn';
+      btn.id = `btn-${c}`;
+      btn.onclick = () => showClass(c);
+      btn.innerHTML = `${label} <span class="st-count-badge">${DATA[c].length}</span>`;
+      sec.appendChild(btn);
+    });
+    nav.appendChild(sec);
+  });
+}
+
+function setActive(id) {
+  document.querySelectorAll('.st-class-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(`btn-${id}`);
+  if (el) el.classList.add('active');
+}
+
+// ===== Overview =====
+function showOverview() {
+  activeClass = null;
+  setActive('overview');
+  document.getElementById('page-title').textContent = '📊 سجل متابعة الطلاب';
+  document.getElementById('search-input').style.display = 'none';
+  document.getElementById('sort-select').style.display = 'none';
+  document.getElementById('export-btn').style.display = 'none';
+
+  const totalStudents = CLASSES.reduce((a,c) => a + DATA[c].length, 0);
+  const allStudents = CLASSES.flatMap(c => DATA[c]);
+  const withTotal = allStudents.filter(s => s.total != null && s.total > 0);
+  const avgTotal = withTotal.length ? (withTotal.reduce((a,s) => a+s.total, 0) / withTotal.length).toFixed(1) : '-';
+  const completionRate = withTotal.length ? Math.round(withTotal.length / allStudents.length * 100) : 0;
+
+  // Count by grade
+  const gradeCounts = {};
+  GRADES.forEach(g => {
+    gradeCounts[g] = GRADE_CLASSES[g].reduce((a,c) => a + DATA[c].length, 0);
+  });
+
+  // Build class cards data
+  const classCardsHTML = CLASSES.map(cls => {
+    const students = DATA[cls];
+    const withT = students.filter(s => s.total != null && s.total > 0);
+    const avg = withT.length ? (withT.reduce((a,s) => a+s.total,0)/withT.length).toFixed(1) : null;
+    const pct = avg ? Math.round(avg) : 0;
+    const color = pct >= 90 ? '#10b981' : pct >= 75 ? '#3b82f6' : pct >= 60 ? '#f59e0b' : pct > 0 ? '#ef4444' : '#cbd5e1';
+    const label = cls.replace('ف1','ف١').replace('ف2','ف٢');
+    return `<div class="st-cls-card" onclick="showClass('${cls}')">
+      <div class="st-cls-name">${label}</div>
+      <div class="st-cls-stats">${students.length} طالب — متوسط: ${avg || 'لم يُدخل'}</div>
+      <div class="st-cls-bar"><div class="st-cls-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Chart data
+  const chartHTML = CLASSES.map(cls => {
+    const students = DATA[cls];
+    const withT = students.filter(s => s.total != null && s.total > 0);
+    const avg = withT.length ? Math.round(withT.reduce((a,s)=>a+s.total,0)/withT.length) : 0;
+    const color = avg >= 90 ? '#10b981' : avg >= 75 ? '#3b82f6' : avg >= 60 ? '#f59e0b' : avg > 0 ? '#ef4444' : '#e2e8f0';
+    const label = cls.replace('ف1','ف١').replace('ف2','ف٢');
+    return `<div class="chart-bar-row">
+      <div class="chart-bar-label">${label}</div>
+      <div class="chart-bar-track">
+        <div class="chart-bar-fill" style="width:${avg}%;background:${color}">
+          ${avg > 10 ? `<span class="chart-bar-val">${avg}</span>` : ''}
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:#64748b;width:32px">${avg || '-'}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="st-cards">
+      <div class="st-card"><div class="st-card-label">إجمالي الطلاب</div><div class="st-card-val" style="color:#3b82f6">${totalStudents}</div><div class="st-card-sub">${CLASSES.length} فصل</div></div>
+      <div class="st-card"><div class="st-card-label">متوسط الدرجات</div><div class="st-card-val" style="color:#10b981">${avgTotal}</div><div class="st-card-sub">من 100</div></div>
+      <div class="st-card"><div class="st-card-label">تم إدخال البيانات</div><div class="st-card-val" style="color:#f59e0b">${completionRate}%</div><div class="st-card-sub">${withTotal.length} من ${allStudents.length} طالب</div></div>
+      <div class="st-card"><div class="st-card-label">رابع</div><div class="st-card-val">${gradeCounts['رابع']}</div><div class="st-card-sub">طالب</div></div>
+      <div class="st-card"><div class="st-card-label">خامس</div><div class="st-card-val">${gradeCounts['خامس']}</div><div class="st-card-sub">طالب</div></div>
+      <div class="st-card"><div class="st-card-label">سادس</div><div class="st-card-val">${gradeCounts['سادس']}</div><div class="st-card-sub">طالب</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+      <div style="background:var(--white,#fff);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden">
+        <div style="padding:14px 20px;font-size:15px;font-weight:900;border-bottom:1px solid #f1f5f9">الفصول الدراسية</div>
+        <div class="chart-area">${chartHTML}</div>
+      </div>
+      <div style="background:var(--white,#fff);border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);overflow:hidden">
+        <div style="padding:14px 20px;font-size:15px;font-weight:900;border-bottom:1px solid #f1f5f9">اختر فصلاً</div>
+        <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px">${classCardsHTML}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Class View =====
+let filteredStudents = [];
+
+function showClass(cls) {
+  activeClass = cls;
+  setActive(cls);
+  const label = cls.replace('ف1','فصل١').replace('ف2','فصل٢');
+  document.getElementById('page-title').textContent = `📋 ${label}`;
+  document.getElementById('search-input').style.display = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('sort-select').style.display = '';
+  document.getElementById('export-btn').style.display = '';
+  renderClassTable(cls);
+}
+
+function getGradeColor(total) {
+  if (total == null || total === 0) return 'total-none';
+  if (total >= 90) return 'total-exc';
+  if (total >= 75) return 'total-good';
+  if (total >= 60) return 'total-mid';
+  return 'total-low';
+}
+
+function filterStudents() {
+  if (!activeClass) return;
+  renderClassTable(activeClass);
+}
+
+function renderClassTable(cls) {
+  const students = DATA[cls];
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const sort = document.getElementById('sort-select').value;
+
+  let list = students.filter(s => !q || s.name.includes(q));
+  if (sort === 'total-desc') list = [...list].sort((a,b) => (b.total||0)-(a.total||0));
+  else if (sort === 'total-asc') list = [...list].sort((a,b) => (a.total||0)-(b.total||0));
+  else if (sort === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name));
+  else if (sort === 'behavior') list = [...list].sort((a,b) => (b.behavior||0)-(a.behavior||0));
+
+  filteredStudents = list;
+
+  const withT = students.filter(s => s.total != null && s.total > 0);
+  const avg = withT.length ? (withT.reduce((a,s)=>a+s.total,0)/withT.length).toFixed(1) : '-';
+  const high = withT.length ? Math.max(...withT.map(s=>s.total)).toFixed(1) : '-';
+  const low  = withT.length ? Math.min(...withT.map(s=>s.total)).toFixed(1) : '-';
+
+  const rows = list.map((s,i) => {
+    const totalClass = getGradeColor(s.total);
+    const beh = s.behavior == null ? '<span class="beh-zero">—</span>'
+              : s.behavior > 0  ? `<span class="beh-pos">+${s.behavior}</span>`
+              : s.behavior < 0  ? `<span class="beh-neg">${s.behavior}</span>`
+              : '<span class="beh-zero">0</span>';
+
+    function check(field, studentIdx) {
+      const val = s[field];
+      const cls2 = val === 1 || val === 1.0 ? 'done' : 'miss';
+      const icon = cls2 === 'done' ? '✓' : '·';
+      return `<span class="cell-check ${cls2}" onclick="toggleCheck('${cls}',${studentIdx},'${field}')">${icon}</span>`;
+    }
+    function numCell(field, studentIdx, max) {
+      const val = s[field];
+      const display = val != null ? val : '—';
+      return `<span class="cell-edit" onclick="editCell(this,'${cls}',${studentIdx},'${field}',${max})">${display}</span>`;
+    }
+
+    const realIdx = students.indexOf(s);
+    return `<tr>
+      <td class="td-num">${s.num || i+1}</td>
+      <td class="td-name">${s.name}</td>
+      <td>${check('w1',realIdx)}</td><td>${check('w2',realIdx)}</td><td>${check('w3',realIdx)}</td>
+      <td>${check('w4',realIdx)}</td><td>${check('w5',realIdx)}</td><td>${check('w6',realIdx)}</td>
+      <td style="font-weight:700">${s.w_total != null ? s.w_total.toFixed(1) : '—'}</td>
+      <td>${check('b1',realIdx)}</td><td>${check('b2',realIdx)}</td><td>${check('b3',realIdx)}</td><td>${check('b4',realIdx)}</td>
+      <td style="font-weight:700">${s.b_total != null ? s.b_total.toFixed(1) : '—'}</td>
+      <td>${check('t1',realIdx)}</td><td>${check('t2',realIdx)}</td><td>${check('t3',realIdx)}</td>
+      <td>${check('t4',realIdx)}</td><td>${check('t5',realIdx)}</td><td>${check('t6',realIdx)}</td>
+      <td style="font-weight:700">${s.t_total != null ? s.t_total.toFixed(1) : '—'}</td>
+      <td>${check('m1',realIdx)}</td><td>${check('m2',realIdx)}</td><td>${check('m3',realIdx)}</td>
+      <td>${check('m4',realIdx)}</td><td>${check('m5',realIdx)}</td>
+      <td style="font-weight:700">${s.m_total != null ? s.m_total.toFixed(1) : '—'}</td>
+      <td>${numCell('practical',realIdx,40)}</td>
+      <td>${numCell('written',realIdx,20)}</td>
+      <td><span class="total-badge ${totalClass}">${s.total != null && s.total > 0 ? s.total.toFixed(1) : '—'}</span></td>
+      <td>${beh}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="st-table-wrap">
+      <div class="st-table-head">
+        <div class="st-class-title">${cls.replace('ف1','فصل١').replace('ف2','فصل٢')}</div>
+        <div class="st-stat-chips">
+          <span class="st-chip">👥 ${students.length} طالب</span>
+          <span class="st-chip">📊 متوسط: ${avg}</span>
+          <span class="st-chip">⬆ أعلى: ${high}</span>
+          <span class="st-chip">⬇ أدنى: ${low}</span>
+        </div>
+      </div>
+      <div class="st-table-scroll">
+        <table class="st-table">
+          <thead>
+            <tr>
+              <th class="th-num" rowspan="2">#</th>
+              <th class="th-name" rowspan="2">اسم الطالب</th>
+              <th colspan="7" class="th-group">واجبات /10</th>
+              <th colspan="5" class="th-group">بحوث /10</th>
+              <th colspan="7" class="th-group">تفاعل /10</th>
+              <th colspan="6" class="th-group">مشاركة /10</th>
+              <th class="th-group" rowspan="2">عملي<br>/40</th>
+              <th class="th-group" rowspan="2">تحريري<br>/20</th>
+              <th class="th-group" rowspan="2">المجموع<br>/100</th>
+              <th class="th-group" rowspan="2">السلوك</th>
+            </tr>
+            <tr>
+              <th>و1</th><th>و2</th><th>و3</th><th>و4</th><th>و5</th><th>و6</th><th>مج</th>
+              <th>ب1</th><th>ب2</th><th>ب3</th><th>ب4</th><th>مج</th>
+              <th>ت1</th><th>ت2</th><th>ت3</th><th>ت4</th><th>ت5</th><th>ت6</th><th>مج</th>
+              <th>م1</th><th>م2</th><th>م3</th><th>م4</th><th>م5</th><th>مج</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// Toggle check (واجبات/بحوث/تفاعل/مشاركة)
+function toggleCheck(cls, idx, field) {
+  const s = DATA[cls][idx];
+  s[field] = s[field] === 1 ? null : 1;
+  // Recalculate totals
+  recalcStudent(cls, idx);
+  saveData();
+  renderClassTable(cls);
+}
+
+// Edit numeric cell (practical/written/behavior)
+function editCell(el, cls, idx, field, max) {
+  if (el.classList.contains('editing')) return;
+  el.classList.add('editing');
+  const old = DATA[cls][idx][field];
+  const input = document.createElement('input');
+  input.type = 'number'; input.min = 0; input.max = max || 999;
+  input.value = old != null ? old : '';
+  input.style.cssText = 'width:60px;border:none;background:transparent;font-family:inherit;font-size:13px;text-align:center;outline:none';
+  el.innerHTML = ''; el.appendChild(input);
+  input.focus(); input.select();
+
+  function commit() {
+    const val = input.value.trim();
+    DATA[cls][idx][field] = val === '' ? null : parseFloat(val);
+    recalcStudent(cls, idx);
+    saveData();
+    renderClassTable(cls);
+  }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => { if(e.key==='Enter') commit(); if(e.key==='Escape'){el.classList.remove('editing');renderClassTable(cls);} });
+}
+
+function recalcStudent(cls, idx) {
+  const s = DATA[cls][idx];
+  // واجبات: sum(w1..w6)/6 * 10
+  const ws = ['w1','w2','w3','w4','w5','w6'].map(k => s[k] === 1 ? 1 : 0);
+  s.w_total = ws.reduce((a,v)=>a+v,0) > 0 ? parseFloat((ws.reduce((a,v)=>a+v,0)/6*10).toFixed(2)) : 0;
+  // بحوث: sum(b1..b4)/4 * 10
+  const bs = ['b1','b2','b3','b4'].map(k => s[k] === 1 ? 1 : 0);
+  s.b_total = bs.reduce((a,v)=>a+v,0) > 0 ? parseFloat((bs.reduce((a,v)=>a+v,0)/4*10).toFixed(2)) : 0;
+  // تفاعل: sum(t1..t6)/6 * 10
+  const ts = ['t1','t2','t3','t4','t5','t6'].map(k => s[k] === 1 ? 1 : 0);
+  s.t_total = ts.reduce((a,v)=>a+v,0) > 0 ? parseFloat((ts.reduce((a,v)=>a+v,0)/6*10).toFixed(2)) : 0;
+  // مشاركة: sum(m1..m5)/5 * 10
+  const ms = ['m1','m2','m3','m4','m5'].map(k => s[k] === 1 ? 1 : 0);
+  s.m_total = ms.reduce((a,v)=>a+v,0) > 0 ? parseFloat((ms.reduce((a,v)=>a+v,0)/5*10).toFixed(2)) : 0;
+  // المجموع
+  const total = (s.w_total||0) + (s.b_total||0) + (s.t_total||0) + (s.m_total||0) + (s.practical||0) + (s.written||0);
+  s.total = total > 0 ? parseFloat(total.toFixed(2)) : null;
+}
+
+// Export
+function exportClass() {
+  if (!activeClass) return;
+  const students = DATA[activeClass];
+  const rows = [['#','الاسم','و1','و2','و3','و4','و5','و6','مج واجبات','ب1','ب2','ب3','ب4','مج بحوث','ت1','ت2','ت3','ت4','ت5','ت6','مج تفاعل','م1','م2','م3','م4','م5','مج مشاركة','عملي/40','تحريري/20','المجموع/100','السلوك']];
+  students.forEach(s => rows.push([
+    s.num, s.name,
+    s.w1,s.w2,s.w3,s.w4,s.w5,s.w6,s.w_total,
+    s.b1,s.b2,s.b3,s.b4,s.b_total,
+    s.t1,s.t2,s.t3,s.t4,s.t5,s.t6,s.t_total,
+    s.m1,s.m2,s.m3,s.m4,s.m5,s.m_total,
+    s.practical,s.written,s.total,s.behavior
+  ]));
+  // CSV export (simple, no SheetJS needed)
+  const csv = rows.map(r => r.map(v => v == null ? '' : `"${v}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${activeClass}_متابعة.csv`;
+  a.click();
+}
+
+// Init
+buildSidebar();
+showOverview();
+</script>
+</body>
+</html>
