@@ -1571,3 +1571,87 @@ textarea.tmc-target {
   font-size: 14px; font-weight: 700; text-align: center; color: var(--text-dark);
 }
 .sp-date-cell { font-size: 12px; color: var(--text-mid); white-space: nowrap; }
+
+/* ===================================================
+   تجاوب الجوال — Mobile Responsive
+   =================================================== */
+
+/* زر القائمة — مخفي على الشاشات الكبيرة */
+.mob-menu-btn {
+  display: none;
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.mob-menu-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* طبقة التعتيم */
+.mob-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--header-h);
+  background: rgba(0,0,0,0.45);
+  z-index: 150;
+}
+.mob-overlay.show { display: block; }
+
+@media (max-width: 768px) {
+
+  /* الهيدر */
+  .dash-header { padding: 0 10px; gap: 6px; }
+  .dash-header-center { display: none; }
+  .mob-menu-btn { display: flex; }
+  .mob-hide { display: none !important; }
+  .hbtn { padding: 6px 10px; font-size: 12px; }
+  .dash-logo strong { font-size: 13px; }
+  .dash-logo small { display: none; }
+
+  /* الشريط الجانبي: overlay منزلق */
+  .dash-sidebar {
+    position: fixed;
+    top: var(--header-h);
+    right: -260px;
+    bottom: 0;
+    width: 260px;
+    z-index: 200;
+    transition: right .25s ease;
+    box-shadow: -6px 0 24px rgba(0,0,0,0.18);
+  }
+  .dash-sidebar.mob-open { right: 0; }
+
+  /* المنطقة الرئيسية: عرض كامل */
+  .dash-main { padding: 16px; }
+
+  /* شبكة الإحصائيات */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* بطاقات الإجراءات */
+  .overview-actions { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .action-card { padding: 16px 12px; }
+  .ac-icon { font-size: 24px; }
+  .action-card strong { font-size: 13px; }
+  .action-card small { font-size: 11px; }
+
+  /* عنوان الصفحة */
+  .overview-title { font-size: 20px; }
+  .overview-sub { font-size: 13px; margin-bottom: 20px; }
+
+  /* محرر الدرس */
+  .editor-card { padding: 16px; }
+  .editor-two-col { grid-template-columns: 1fr; }
+  .editor-three-col { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .overview-actions { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}

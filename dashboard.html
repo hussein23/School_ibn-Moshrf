@@ -22,6 +22,8 @@
   <!-- ===== الشريط العلوي ===== -->
   <header class="dash-header">
     <div class="dash-header-right">
+      <!-- زر القائمة للجوال -->
+      <button class="mob-menu-btn" id="mob-menu-btn" onclick="toggleMobSidebar()" title="القائمة">☰</button>
       <div class="dash-logo">
         <span>⚙️</span>
         <div>
@@ -34,14 +36,17 @@
       <div class="save-status" id="save-status">✅ محفوظ</div>
     </div>
     <div class="dash-header-left">
-      <button class="hbtn hbtn-ghost" onclick="resetTeacherPin()" title="تغيير رمز الدخول">🔑 رمز الدخول</button>
-      <button class="hbtn hbtn-ghost" onclick="resetToDefault()" title="استعادة البيانات الأصلية">↺ استعادة</button>
-      <button class="hbtn hbtn-secondary" onclick="importJSON()">📥 استيراد</button>
-      <button class="hbtn hbtn-primary" onclick="exportJSON()">📤 تصدير JSON</button>
-      <a class="hbtn hbtn-view" href="index.html" target="_blank">👁 عرض الموقع</a>
+      <button class="hbtn hbtn-ghost mob-hide" onclick="resetTeacherPin()" title="تغيير رمز الدخول">🔑 رمز الدخول</button>
+      <button class="hbtn hbtn-ghost mob-hide" onclick="resetToDefault()" title="استعادة البيانات الأصلية">↺ استعادة</button>
+      <button class="hbtn hbtn-secondary mob-hide" onclick="importJSON()">📥 استيراد</button>
+      <button class="hbtn hbtn-primary" onclick="exportJSON()">📤 تصدير</button>
+      <a class="hbtn hbtn-view mob-hide" href="index.html" target="_blank">👁 عرض</a>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
     </div>
   </header>
+
+  <!-- طبقة التعتيم للجوال -->
+  <div class="mob-overlay" id="mob-overlay" onclick="toggleMobSidebar()"></div>
 
   <div class="dash-layout">
 
@@ -191,6 +196,18 @@
   <script src="js/curriculum-loader.js"></script>
   <script src="js/student-auth.js" defer></script>
   <script src="js/dashboard.js" defer></script>
+
+  <!-- تبديل الشريط الجانبي على الجوال -->
+  <script>
+    function toggleMobSidebar() {
+      var sb = document.querySelector('.dash-sidebar');
+      var ov = document.getElementById('mob-overlay');
+      var btn = document.getElementById('mob-menu-btn');
+      var open = sb.classList.toggle('mob-open');
+      ov.classList.toggle('show', open);
+      btn.textContent = open ? '✕' : '☰';
+    }
+  </script>
 
   <!-- تسجيل Service Worker -->
   <script>
