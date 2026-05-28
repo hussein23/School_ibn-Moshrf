@@ -137,11 +137,10 @@ html, body {
 }
 .st-page-title { font-size: 20px; font-weight: 900; flex: 1; min-width: 0; }
 
-/* منطقة المحتوى — تتمرر عمودياً */
+/* منطقة المحتوى — تتمرر في كلا الاتجاهين */
 .st-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: auto;
   padding: 20px;
 }
 
@@ -216,10 +215,9 @@ html, body {
   color: var(--text-mid, #64748b);
 }
 
-/* الجدول له scroll container أفقي — العمودي يتولاه st-content */
+/* st-content يتولى التمرير — هنا نسمح بالتجاوز */
 .st-table-scroll {
-  overflow-x: auto;     /* يتمرر أفقياً فقط */
-  overflow-y: visible;
+  overflow: visible;
 }
 table.st-table {
   border-collapse: collapse;
