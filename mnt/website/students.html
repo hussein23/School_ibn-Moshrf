@@ -137,10 +137,11 @@ html, body {
 }
 .st-page-title { font-size: 20px; font-weight: 900; flex: 1; min-width: 0; }
 
-/* منطقة المحتوى — تتمرر في كلا الاتجاهين */
+/* منطقة المحتوى — تتمرر عمودياً فقط للنظرة العامة */
 .st-content {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
 }
 
@@ -197,9 +198,7 @@ html, body {
   background: var(--white, #fff);
   border-radius: 16px;
   box-shadow: 0 2px 12px rgba(0,0,0,.07);
-  display: flex;
-  flex-direction: column;
-  /* لا overflow:hidden هنا حتى يعمل position:sticky للرؤوس */
+  overflow: hidden; /* يُبقي الحواف المستديرة مع st-table-scroll الداخلي */
 }
 .st-table-head {
   padding: 12px 18px;
@@ -215,9 +214,10 @@ html, body {
   color: var(--text-mid, #64748b);
 }
 
-/* st-content يتولى التمرير — هنا نسمح بالتجاوز */
+/* حاوية التمرير الحقيقية للجدول — ارتفاع ثابت بـ calc */
 .st-table-scroll {
-  overflow: visible;
+  overflow: auto;
+  height: calc(100vh - 168px); /* 100vh - st-header(55) - st-content padding(40) - st-table-head(50) - margin(23) */
 }
 table.st-table {
   border-collapse: collapse;
@@ -328,7 +328,7 @@ table.st-table tr:hover td.td-name { background: #f8faff; }
   .st-nav-scroll { max-height: 200px; }
   .st-main { height: auto; overflow: visible; }
   .st-content { overflow: visible; }
-  .st-table-scroll { overflow-x: auto; }
+  .st-table-scroll { height: 60vh; overflow: auto; }
 }
 </style>
 </head>
